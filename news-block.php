@@ -15,60 +15,64 @@ locate_template( 'simple_html_dom.php', true, true );
 // have to use init hook, since there is server-side rendering
 // can't just use enqueue_block_editor_assets hook, since an editor-only return is client side rendered html, which is
 // subject to html filtering (and would remove the iframe for less privileged users)
-add_action( 'init', ['news_block', 'load_news_block'] );
+add_action( 'init', [ 'news_block', 'load_news_block' ] );
+
 //add_action('enqueue_block_editor_assets', ['news_block', 'load_news_block']);
 
 
 class news_block {
 	/**
-     * Apply defaults to specified attributes if attribute is not defined by the user.
+	 * Apply defaults to specified attributes if attribute is not defined by the user.
+	 *
 	 * @param array $attributes
 	 *
 	 * @return array
 	 */
-	public static function shortcode_atts($attributes = []){
-		$defaults      = [
-			'title'            => [
+	public static function shortcode_atts( $attributes = [] ) {
+		$defaults = [
+			'title'               => [
 				'type'    => 'string',
 				'default' => 'News Embed'
 			],
-			'blog_id'           => [
+			'blog_id'             => [
 				'type'    => 'integer',
 				'default' => get_current_blog_id()
 			],
-            'post_type' => [
-                'type' => 'string',
-                'default' => 'news'
-            ],
-            'taxonomy' => [
-                'type' => 'string',
-                'default' => 'news_category'
-            ],
-            'taxonomy_term_mode'      => [
-                    'type' => 'boolean',
-                    'default' => false // when false, use blacklist (any taxonomies listed will NOT show up). when true, use whitelist (only taxonomies listed will show up)
-            ],
-            'taxonomy_term_slugs' => [
-                    'type' => 'array',
-                    'default' => [],
-                    'items' => [
-                            'type' => 'string'
-                    ]
-            ],
-			'latest_date'       => [
+			'post_type'           => [
+				'type'    => 'string',
+				'default' => 'news'
+			],
+			'taxonomy'            => [
+				'type'    => 'string',
+				'default' => 'news_category'
+			],
+			'taxonomy_term_mode'  => [
+				'type'    => 'boolean',
+				'default' => false
+				// when false, use blacklist (any taxonomies listed will NOT show up). when true, use whitelist (only taxonomies listed will show up)
+			],
+			'taxonomy_term_slugs' => [
+				'type'    => 'array',
+				'default' => [],
+				'items'   => [
+					'type' => 'string'
+				]
+			],
+			'latest_date'         => [
 				'type'    => 'date',
 				'default' => null
 			],
-			'max_news_articles'  => [
+			'max_news_articles'   => [
 				'type'    => 'integer',
 				'default' => 5
 			],
-			'max_excerpt_length' => [
+			'max_excerpt_length'  => [
 				'type'    => 'integer',
 				'default' => 30
 			],
 		];
-		return shortcode_atts($defaults, $attributes);
+
+		return shortcode_atts( $defaults, $attributes );
 	}
 
 	/**
@@ -89,7 +93,7 @@ class news_block {
 			'news-module/news-block',
 			[
 				'editor_script'   => 'news-block-js',
-				'render_callback' => ['news_block','render_news_callback'],
+				'render_callback' => [ 'news_block', 'render_news_callback' ],
 				// attributes must be defined here as well as on the client-side js file
 				'attributes'      => self::shortcode_atts()
 			]
@@ -97,6 +101,7 @@ class news_block {
 	}
 
 	/** Prepends the $content with the current post thumbnail if exists - <p>{thumbnail}</p>$content
+	 *
 	 * @param $content
 	 *
 	 * @return string
@@ -111,15 +116,14 @@ class news_block {
 	}
 
 	// Custom excerpt word count length for copy, with the 'more' elipsis counting as one of the words
-	public static function excerpt_length( ) {
+	public static function excerpt_length() {
 		return 8;
 	}
 
 	// Custom excerpt ellipses
-	public static function excerpt_more( ) {
+	public static function excerpt_more() {
 		return '...';
 	}
-
 
 
 	/**
@@ -133,33 +137,33 @@ class news_block {
 	 * @return string // like shortcode callbacks, this is the html that we render in place of the block.
 	 */
 	public static function render_news_callback( $attributes, $content ) {
-		$attributes = self::shortcode_atts($attributes);
+		$attributes           = self::shortcode_atts( $attributes );
 		$return_rendered_html = "";
 
-		$news_posts = self::internal_site_query($attributes);
+		$news_posts = self::internal_site_query( $attributes );
 
-		$news_posts = array_slice( $news_posts, 0, $attributes['max_news_articles'] );
+		$news_posts = array_slice( $news_posts, 0, $attributes[ 'max_news_articles' ] );
 
-		if (sizeof($news_posts) > 0) {
-            foreach ( $news_posts as $post ) {
+		if ( sizeof( $news_posts ) > 0 ) {
+			foreach ( $news_posts as $post ) {
 
-                $youtube_html = "";
-                if ( $post[ 'youtube_video_id' ] ) {
-                    $youtube_html = "
+				$youtube_html = "";
+				if ( $post[ 'youtube_video_id' ] ) {
+					$youtube_html = "
                         <aside class='go-to' >
                             <a href='{$post[ 'permalink' ]}' >Go to Article</a >
                         </aside >
                     ";
-                }
+				}
 
-                $notification_html = "";
-                if ( $post[ 'notification_type' ] ) {
-                    $notification_html = "
+				$notification_html = "";
+				if ( $post[ 'notification_type' ] ) {
+					$notification_html = "
                         <span class='notification' >{$post[ 'notification_type' ]}</span>
                     ";
-                }
+				}
 
-                $return_rendered_html .= "
+				$return_rendered_html .= "
                     <article>
                         <a 
                                 target='{$post['target']}' 
@@ -184,48 +188,50 @@ class news_block {
                         
                 
                 ";
-            }
+			}
+
 			return $return_rendered_html;
 		} else {
-		    return "No posts found";
-        }
+			return "No posts found";
+		}
 	}
 
 
 	/**
-     * Runs a query on the internal site, based on the taxonomy terms specified
+	 * Runs a query on the internal site, based on the taxonomy terms specified
+	 *
 	 * @param $attributes
 	 *
 	 * @return WP_Query
 	 */
-	public static function internal_site_query($attributes){
-        $attributes = self::shortcode_atts($attributes);
+	public static function internal_site_query( $attributes ) {
+		$attributes        = self::shortcode_atts( $attributes );
 		$return_news_posts = [];
 
 		$switched_blog = false;
-        if ( get_current_blog_id() != $attributes['blog_id']){
-            switch_to_blog( $attributes['blog_id']);
-            $switched_blog = true;
-        }
-        $tax_query = self::tax_query($attributes);
+		if ( get_current_blog_id() != $attributes[ 'blog_id' ] ) {
+			switch_to_blog( $attributes[ 'blog_id' ] );
+			$switched_blog = true;
+		}
+		$tax_query = self::tax_query( $attributes );
 
-        if (sizeof($tax_query) > 0){
-	        $query_args = [
-		        'post_type' => $attributes['post_type'],
-		        'posts_per_page' => $attributes['max_news_articles'],
-		        'tax_query'      => [ self::tax_query($attributes) ], // must be inside an array
-	        ];
-        } else {
-	        $query_args = [
-		        'post_type' => $attributes['post_type'],
-		        'posts_per_page' => $attributes['max_news_articles'],
-	        ];
-        }
+		if ( sizeof( $tax_query ) > 0 ) {
+			$query_args = [
+				'post_type'      => $attributes[ 'post_type' ],
+				'posts_per_page' => $attributes[ 'max_news_articles' ],
+				'tax_query'      => [ self::tax_query( $attributes ) ], // must be inside an array
+			];
+		} else {
+			$query_args = [
+				'post_type'      => $attributes[ 'post_type' ],
+				'posts_per_page' => $attributes[ 'max_news_articles' ],
+			];
+		}
 
 		$the_query = new WP_Query( $query_args );
 
-		add_filter( 'excerpt_length', ['news_block','excerpt_length'] );
-		add_filter( 'excerpt_more', ['news_block','excerpt_more'] );
+		add_filter( 'excerpt_length', [ 'news_block', 'excerpt_length' ] );
+		add_filter( 'excerpt_more', [ 'news_block', 'excerpt_more' ] );
 
 		while ( $the_query->have_posts() ) {
 
@@ -242,70 +248,72 @@ class news_block {
 				'piece'     => get_the_excerpt(),
 				'datesort'  => get_the_date( 'Y-m-d H:i:s T' ),
 				'date'      => get_the_date(),
-				'class'     => get_post_class('news-preview-image'),
+				'class'     => get_post_class( 'news-preview-image' ),
 				'target'    => ''
 			] );
 		}
 
-		remove_filter( 'excerpt_length', ['news_block','excerpt_length'] );
-		remove_filter( 'excerpt_more', ['news_block','excerpt_more'] );
+		remove_filter( 'excerpt_length', [ 'news_block', 'excerpt_length' ] );
+		remove_filter( 'excerpt_more', [ 'news_block', 'excerpt_more' ] );
 
 		wp_reset_postdata();
 
-		if ($switched_blog){
+		if ( $switched_blog ) {
 			restore_current_blog();
 		}
 
 		return $return_news_posts;
-    }
+	}
 
-    public static function external_site_query($attributes){
-	    $attributes = self::shortcode_atts($attributes);
-	    $news_posts = [];
-	    add_filter( 'wp_feed_cache_transient_lifetime', create_function( '$a', 'return 600;' ) ); // refresh every 10 minutes
-	    $feed = fetch_feed( "https://ucfhealth.com/feed/?post_type=news&news_category=crosspost-to-com" );
-	    remove_filter( 'wp_feed_cache_transient_lifetime', create_function( '$a', 'return 600;' ) );
-    }
+	public static function external_site_query( $attributes ) {
+		$attributes = self::shortcode_atts( $attributes );
+		$news_posts = [];
+		add_filter( 'wp_feed_cache_transient_lifetime', create_function( '$a', 'return 600;' ) ); // refresh every 10 minutes
+		$feed = fetch_feed( "https://ucfhealth.com/feed/?post_type=news&news_category=crosspost-to-com" );
+		remove_filter( 'wp_feed_cache_transient_lifetime', create_function( '$a', 'return 600;' ) );
+	}
 
 	/**
-     * Generates the tax_query array based on attributes
+	 * Generates the tax_query array based on attributes
+	 *
 	 * @param $attributes
 	 *
 	 * @return array
 	 */
-    public static function tax_query($attributes){
-	    $attributes = self::shortcode_atts($attributes);
+	public static function tax_query( $attributes ) {
+		$attributes = self::shortcode_atts( $attributes );
 
-	    $return_array = [];
-	    if ($attributes['taxonomy_term_mode'] === true){
-	        // whitelist mode.
-            $relation = "OR";
-            $operator = "IN";
-        } else {
-	        // blacklist mode
-            $relation = "AND";
-            $operator = "NOT IN";
-        }
+		$return_array = [];
+		if ( $attributes[ 'taxonomy_term_mode' ] === true ) {
+			// whitelist mode.
+			$relation = "OR";
+			$operator = "IN";
+		} else {
+			// blacklist mode
+			$relation = "AND";
+			$operator = "NOT IN";
+		}
 
-	    // apply AND or OR if specifying more than one slug
-	    if (sizeof($attributes['taxonomy_term_slugs']) > 1) {
-            $return_array['relation'] = $relation;
-        }
+		// apply AND or OR if specifying more than one slug
+		if ( sizeof( $attributes[ 'taxonomy_term_slugs' ] ) > 1 ) {
+			$return_array[ 'relation' ] = $relation;
+		}
 
 
-	    // looping through each term and adding an explicit tax query for each one.
-        // we might be able to simply apply all terms to the 'terms' operator as it accepts an array,
-        // but I'm not sure what the behaviour is with IN vs NOT IN. we need (OR with IN) and (AND with NOT IN).
-	    foreach ($attributes['taxonomy_term_slugs'] as $slug){
-            array_push($return_array, [
-                'taxonomy' => $attributes['taxonomy'],
-                'field' => 'slug',
-                'terms' => $slug,
-                'operator' => $operator
-            ]);
-        }
-	    return $return_array;
-    }
+		// looping through each term and adding an explicit tax query for each one.
+		// we might be able to simply apply all terms to the 'terms' operator as it accepts an array,
+		// but I'm not sure what the behaviour is with IN vs NOT IN. we need (OR with IN) and (AND with NOT IN).
+		foreach ( $attributes[ 'taxonomy_term_slugs' ] as $slug ) {
+			array_push( $return_array, [
+				'taxonomy' => $attributes[ 'taxonomy' ],
+				'field'    => 'slug',
+				'terms'    => $slug,
+				'operator' => $operator
+			] );
+		}
+
+		return $return_array;
+	}
 
 	function z__construct() {
 		$news_posts = [];
@@ -379,7 +387,7 @@ class news_block {
 				'piece'     => get_the_excerpt(),
 				'datesort'  => get_the_date( 'Y-m-d H:i:s T' ),
 				'date'      => get_the_date(),
-				'class'     => get_post_class('news-preview-image'),
+				'class'     => get_post_class( 'news-preview-image' ),
 				'target'    => ''
 			] );
 

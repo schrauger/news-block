@@ -12,11 +12,11 @@ registerBlockType('news-module/news-block', {
         // need ability for two or more sources. probably repeating field.
         // one source option is local, and then you choose the blog (generally 1 ie main blog)
         // another source is local and must be an rss feed. use url parameters to filter external news
-        title: {type: 'string', default: "News Embed"},
+        title: {type: 'string', default: "Latest News", placeholder: "News header here"},
         blog_id: {type: 'integer', default: 1},
-        latest_date: {type: 'date', default: null},
+        latest_date: {type: 'date', default: null}, //@TODO does nothing
         max_news_articles: {type: 'integer', default: 5},
-        max_excerpt_length: {type: 'integer', default: 30},
+        max_excerpt_length: {type: 'integer', default: 30}, //@TODO only shows excerpt for first article
 
     },
     edit: function(props) {
@@ -54,7 +54,7 @@ registerBlockType('news-module/news-block', {
                     tagName: 'h3',
                     value: attributes.title,
                     onChange: updateTitle,
-                    placeholder: "News header here",
+                    placeholder: attributes.title.placeholder,
                 }),
                 createElement( ServerSideRender, {
                     block: 'news-module/news-block',
