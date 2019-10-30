@@ -35,8 +35,8 @@ class news_block {
 				'default' => 'News Embed'
 			],
 			'blog_id'             => [
-				'type'    => 'integer',
-				'default' => get_current_blog_id()
+				'type'    => 'string',
+				'default' => '1' //get_current_blog_id()
 			],
 			'post_type'           => [
 				'type'    => 'string',

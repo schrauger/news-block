@@ -13,10 +13,10 @@ registerBlockType('news-module/news-block', {
         // one source option is local, and then you choose the blog (generally 1 ie main blog)
         // another source is local and must be an rss feed. use url parameters to filter external news
         title: {type: 'string', default: "Latest News", placeholder: "News header here"},
-        blog_id: {type: 'integer', default: 1},
+        blog_id: {type: 'number', default: 2},
         latest_date: {type: 'date', default: null}, //@TODO does nothing
-        max_news_articles: {type: 'integer', default: 5},
-        max_excerpt_length: {type: 'integer', default: 55}
+        max_news_articles: {type: 'number', default: 6},
+        max_excerpt_length: {type: 'number', default: 55}
 
     },
     edit: function (props) {
@@ -38,6 +38,7 @@ registerBlockType('news-module/news-block', {
         }
 
         function updateBlogId(blog_id) {
+            blog_id = parseInt(blog_id); // MUST parse integers, or else it will fail to load saved value on page load
             props.setAttributes({blog_id});
         }
 
@@ -46,10 +47,12 @@ registerBlockType('news-module/news-block', {
         }
 
         function updateMaxNewsArticles(max_news_articles) {
+            max_news_articles = parseInt(max_news_articles);
             props.setAttributes({max_news_articles});
         }
 
         function updateMaxExcerptLength(max_excerpt_length) {
+            max_excerpt_length = parseInt(max_excerpt_length);
             props.setAttributes({max_excerpt_length});
         }
 
@@ -82,31 +85,31 @@ registerBlockType('news-module/news-block', {
                                 placeholder: "News header here"
                             }),
                             createElement(TextControl, {
-                                type: 'text',
+                                type: 'integer',
                                 value: attributes.blog_id,
                                 label: 'Blog ID',
                                 onChange: updateBlogId,
-                                type: 'number',
                             }),
                             createElement(TextControl, {
+                                type: 'date',
                                 value: attributes.latest_date,
                                 label: 'Latest Date',
                                 onChange: updateLatestDate,
-                                type: 'date',
                             }),
                             createElement(TextControl, {
+                                type: 'number',
                                 value: attributes.max_news_articles,
                                 label: 'Max news articles',
                                 onChange: updateMaxNewsArticles,
-                                type: 'number',
                                 min: 1,
+                                max: 20,
                                 step: 1
                             }),
                             createElement(TextControl, {
+                                type: 'number',
                                 value: attributes.max_excerpt_length,
                                 label: 'Max excerpt word count',
                                 onChange: updateMaxExcerptLength,
-                                type: 'number',
                                 min: 0,
                                 max: 100,
                                 step: 1
