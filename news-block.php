@@ -3,21 +3,16 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 0.2
+Version: 0.3
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
 */
 
-locate_template( 'simple_html_dom.php', true, true );
+//locate_template( 'simple_html_dom.php', true, true );
+require_once( 'news-block-excerpt.php' );
 
 
-// have to use init hook, since there is server-side rendering
-// can't just use enqueue_block_editor_assets hook, since an editor-only return is client side rendered html, which is
-// subject to html filtering (and would remove the iframe for less privileged users)
-add_action( 'init', [ 'news_block', 'load_news_block' ] );
-
-//add_action('enqueue_block_editor_assets', ['news_block', 'load_news_block']);
 
 
 class news_block {
@@ -312,6 +307,10 @@ class news_block {
 		return $return_array;
 	}
 
+	public static function get_network_sites(){
+
+    }
+
 	function z__construct() {
 		$news_posts = [];
 
@@ -485,55 +484,12 @@ class news_block {
 	}
 }
 
-/**
- * Class news_block_excerpt
- * Since you cannot pass arguments to pre-defined filters, I instead created a class with class variables.
- * Then, you pass the instantiated class object and the function name to the filter. When the filter
- * calls the function, the class variables are set to whatever you defined.
- */
-class news_block_excerpt {
-	private $length;
-	private $more_string;
+// have to use init hook, since there is server-side rendering
+// can't just use enqueue_block_editor_assets hook, since an editor-only return is client side rendered html, which is
+// subject to html filtering (and would remove the iframe for less privileged users)
+add_action( 'init', [ 'news_block', 'load_news_block' ] );
 
-	public function __construct( $excerpt_length = 55, $more_string = '...' ) {
-		$this->length      = $excerpt_length + 1; // first 'word' in excerpt is a non breaking space. add one to the max_count to account for this.
-		$this->more_string = $more_string;
-		$this->add_filters();
-	}
-
-	public function __destruct() {
-		$this->remove_filters();
-	}
-
-	public function excerpt_length( $length ) {
-		// ignore previous length. just return what was defined in our class.
-		return $this->length;
-	}
-
-	// Custom excerpt ellipses
-	public function excerpt_more( $more_string ) {
-		// ignore previous string. just return what was defined in our class.
-		return $this->more_string;
-	}
-
-	public function excerpt_left_trim( $excerpt ) {
-		return preg_replace( '~^(\s*(?:&nbsp;)?)*~i', '', $excerpt );
-	}
-
-	private function add_filters() {
-		add_filter( 'excerpt_length', [ $this, 'excerpt_length' ], 999 );
-		add_filter( 'excerpt_more', [ $this, 'excerpt_more' ], 999 );
-		add_filter( 'get_the_excerpt', [ $this, 'excerpt_left_trim' ], 999 );
-	}
-
-	private function remove_filters() {
-		remove_filter( 'excerpt_length', [ $this, 'excerpt_length' ], 999 );
-		remove_filter( 'excerpt_more', [ $this, 'excerpt_more' ], 999 );
-		remove_filter( 'get_the_excerpt', [ $this, 'excerpt_left_trim' ], 999 );
-	}
-}
-
-
+//add_action('enqueue_block_editor_assets', ['news_block', 'load_news_block']);
 
 
 
