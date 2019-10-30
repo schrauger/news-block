@@ -116,12 +116,12 @@ class news_block {
 	}
 
 	// Custom excerpt word count length for copy, with the 'more' elipsis counting as one of the words
-	public static function excerpt_length() {
+	public static function excerpt_length($length) {
 		return 8;
 	}
 
 	// Custom excerpt ellipses
-	public static function excerpt_more() {
+	public static function excerpt_more($more_string) {
 		return '...';
 	}
 
@@ -230,8 +230,9 @@ class news_block {
 
 		$the_query = new WP_Query( $query_args );
 
-		add_filter( 'excerpt_length', [ 'news_block', 'excerpt_length' ] );
-		add_filter( 'excerpt_more', [ 'news_block', 'excerpt_more' ] );
+		$excerpt_restrictions = new news_block_excerpt($attributes['max_excerpt_length']);
+		add_filter( 'excerpt_length', [ $excerpt_restrictions, 'excerpt_length' ], 999);
+		add_filter( 'excerpt_more', [ $excerpt_restrictions, 'excerpt_more' ], 999);
 
 		while ( $the_query->have_posts() ) {
 
@@ -253,8 +254,8 @@ class news_block {
 			] );
 		}
 
-		remove_filter( 'excerpt_length', [ 'news_block', 'excerpt_length' ] );
-		remove_filter( 'excerpt_more', [ 'news_block', 'excerpt_more' ] );
+		remove_filter( 'excerpt_length', [ $excerpt_restrictions, 'excerpt_length' ], 999);
+		remove_filter( 'excerpt_more', [ $excerpt_restrictions, 'excerpt_more' ], 999);
 
 		wp_reset_postdata();
 
@@ -488,6 +489,30 @@ class news_block {
 	}
 }
 
+/**
+ * Class news_block_excerpt
+ * Since you cannot pass arguments to pre-defined filters, I instead created a class with class variables.
+ * Then, you pass the instantiated class object and the function name to the filter. When the filter
+ * calls the function, the class variables are set to whatever you defined.
+ */
+class news_block_excerpt{
+    public $length;
+    public $more_string;
+    public function __construct($excerpt_length = 55, $more_string = '...') {
+        $this->length = $excerpt_length;
+        $this->more_string = $more_string;
+    }
+	public function excerpt_length($length) {
+		// ignore previous length. just return what was defined in our class.
+		return $this->length;
+	}
+
+	// Custom excerpt ellipses
+	public function excerpt_more($more_string) {
+        // ignore previous string. just return what was defined in our class.
+		return $this->more_string;
+	}
+}
 
 
 

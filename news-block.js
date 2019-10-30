@@ -16,7 +16,7 @@ registerBlockType('news-module/news-block', {
         blog_id: {type: 'integer', default: 1},
         latest_date: {type: 'date', default: null}, //@TODO does nothing
         max_news_articles: {type: 'integer', default: 5},
-        max_excerpt_length: {type: 'integer', default: 30}, //@TODO only shows excerpt for first article
+        max_excerpt_length: {type: 'integer', default: 55}
 
     },
     edit: function(props) {
@@ -93,10 +93,10 @@ registerBlockType('news-module/news-block', {
                         }),
                         createElement(TextControl, {
                             value: attributes.max_excerpt_length,
-                            label:  'Max excerpt character length',
+                            label:  'Max excerpt word count',
                             onChange: updateMaxExcerptLength,
                             type: 'number',
-                            min: 1,
+                            min: 0,
                             max: 100,
                             step: 1
                         })
