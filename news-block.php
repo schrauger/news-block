@@ -1,11 +1,11 @@
 <?php
 /*
-Plugin Name: News Module
-Plugin URI: http://URI_Of_Page_Describing_Plugin_and_Updates
+Plugin Name: News Block
+Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
 Version: 0.2
 Author: Stephen Schrauger
-Author URI: https://github.com/schrauger/news-module
+Author URI: https://github.com/schrauger/news-block
 License: GPL2
 */
 
