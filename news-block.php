@@ -116,12 +116,12 @@ class news_block {
 	}
 
 	// Custom excerpt word count length for copy, with the 'more' elipsis counting as one of the words
-	public static function excerpt_length($length) {
+	public static function excerpt_length( $length ) {
 		return 8;
 	}
 
 	// Custom excerpt ellipses
-	public static function excerpt_more($more_string) {
+	public static function excerpt_more( $more_string ) {
 		return '...';
 	}
 
@@ -230,9 +230,7 @@ class news_block {
 
 		$the_query = new WP_Query( $query_args );
 
-		$excerpt_restrictions = new news_block_excerpt($attributes['max_excerpt_length']);
-		add_filter( 'excerpt_length', [ $excerpt_restrictions, 'excerpt_length' ], 999);
-		add_filter( 'excerpt_more', [ $excerpt_restrictions, 'excerpt_more' ], 999);
+		new news_block_excerpt( $attributes[ 'max_excerpt_length' ] );
 
 		while ( $the_query->have_posts() ) {
 
@@ -254,8 +252,6 @@ class news_block {
 			] );
 		}
 
-		remove_filter( 'excerpt_length', [ $excerpt_restrictions, 'excerpt_length' ], 999);
-		remove_filter( 'excerpt_more', [ $excerpt_restrictions, 'excerpt_more' ], 999);
 
 		wp_reset_postdata();
 
@@ -495,22 +491,45 @@ class news_block {
  * Then, you pass the instantiated class object and the function name to the filter. When the filter
  * calls the function, the class variables are set to whatever you defined.
  */
-class news_block_excerpt{
-    public $length;
-    public $more_string;
-    public function __construct($excerpt_length = 55, $more_string = '...') {
-        $this->length = $excerpt_length;
-        $this->more_string = $more_string;
-    }
-	public function excerpt_length($length) {
+class news_block_excerpt {
+	private $length;
+	private $more_string;
+
+	public function __construct( $excerpt_length = 55, $more_string = '...' ) {
+		$this->length      = $excerpt_length + 1; // first 'word' in excerpt is a non breaking space. add one to the max_count to account for this.
+		$this->more_string = $more_string;
+		$this->add_filters();
+	}
+
+	public function __destruct() {
+		$this->remove_filters();
+	}
+
+	public function excerpt_length( $length ) {
 		// ignore previous length. just return what was defined in our class.
 		return $this->length;
 	}
 
 	// Custom excerpt ellipses
-	public function excerpt_more($more_string) {
-        // ignore previous string. just return what was defined in our class.
+	public function excerpt_more( $more_string ) {
+		// ignore previous string. just return what was defined in our class.
 		return $this->more_string;
+	}
+
+	public function excerpt_left_trim( $excerpt ) {
+		return preg_replace( '~^(\s*(?:&nbsp;)?)*~i', '', $excerpt );
+	}
+
+	private function add_filters() {
+		add_filter( 'excerpt_length', [ $this, 'excerpt_length' ], 999 );
+		add_filter( 'excerpt_more', [ $this, 'excerpt_more' ], 999 );
+		add_filter( 'get_the_excerpt', [ $this, 'excerpt_left_trim' ], 999 );
+	}
+
+	private function remove_filters() {
+		remove_filter( 'excerpt_length', [ $this, 'excerpt_length' ], 999 );
+		remove_filter( 'excerpt_more', [ $this, 'excerpt_more' ], 999 );
+		remove_filter( 'get_the_excerpt', [ $this, 'excerpt_left_trim' ], 999 );
 	}
 }
 

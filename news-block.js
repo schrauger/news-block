@@ -1,7 +1,7 @@
 const {registerBlockType} = wp.blocks; //Blocks API
 const {createElement} = wp.element; //React.createElement
 const {InspectorControls} = wp.editor; //Block inspector wrapper
-const {TextControl,SelectControl,ServerSideRender} = wp.components; //Block inspector wrapper
+const {TextControl, SelectControl, ServerSideRender, PanelBody} = wp.components; //Block inspector wrapper
 
 
 registerBlockType('news-module/news-block', {
@@ -19,8 +19,10 @@ registerBlockType('news-module/news-block', {
         max_excerpt_length: {type: 'integer', default: 55}
 
     },
-    edit: function(props) {
+    edit: function (props) {
         const attributes = props.attributes;
+
+        //console.log(attributes);
 
         /**
          * Save playlist id in state. Unset the submitted flag.
@@ -34,15 +36,19 @@ registerBlockType('news-module/news-block', {
         function updateTitle(title) {
             props.setAttributes({title});
         }
+
         function updateBlogId(blog_id) {
             props.setAttributes({blog_id});
         }
+
         function updateLatestDate(latest_date) {
             props.setAttributes({latest_date});
         }
+
         function updateMaxNewsArticles(max_news_articles) {
             props.setAttributes({max_news_articles});
         }
+
         function updateMaxExcerptLength(max_excerpt_length) {
             props.setAttributes({max_excerpt_length});
         }
@@ -56,63 +62,71 @@ registerBlockType('news-module/news-block', {
                     onChange: updateTitle,
                     placeholder: attributes.title.placeholder,
                 }),
-                createElement( ServerSideRender, {
+                createElement(ServerSideRender, {
                     block: 'news-module/news-block',
                     attributes: props.attributes
-                } ),
+                }),
+
                 createElement(InspectorControls, {},
-                    [
-                        createElement(TextControl, {
-                            type: 'text',
-                            value: attributes.title,
-                            label:  'Title',
-                            onChange: updateTitle,
-                            type: 'string',
-                            placeholder: "News header here"
-                        }),
-                        createElement(TextControl, {
-                            type: 'text',
-                            value: attributes.blog_id,
-                            label:  'Blog ID',
-                            onChange: updateBlogId,
-                            type: 'number',
-                        }),
-                        createElement(TextControl, {
-                            value: attributes.latest_date,
-                            label:  'Latest Date',
-                            onChange: updateLatestDate,
-                            type: 'date',
-                        }),
-                        createElement(TextControl, {
-                            value: attributes.max_news_articles,
-                            label:  'Max news articles',
-                            onChange: updateMaxNewsArticles,
-                            type: 'number',
-                            min: 1,
-                            step: 1
-                        }),
-                        createElement(TextControl, {
-                            value: attributes.max_excerpt_length,
-                            label:  'Max excerpt word count',
-                            onChange: updateMaxExcerptLength,
-                            type: 'number',
-                            min: 0,
-                            max: 100,
-                            step: 1
-                        })
-                    ])
+                    createElement(PanelBody, {
+                            title: 'News Block Controls',
+                            initialOpen: true
+                        },
+                        [
+                            createElement(TextControl, {
+                                type: 'text',
+                                value: attributes.title,
+                                label: 'Title',
+                                onChange: updateTitle,
+                                type: 'string',
+                                placeholder: "News header here"
+                            }),
+                            createElement(TextControl, {
+                                type: 'text',
+                                value: attributes.blog_id,
+                                label: 'Blog ID',
+                                onChange: updateBlogId,
+                                type: 'number',
+                            }),
+                            createElement(TextControl, {
+                                value: attributes.latest_date,
+                                label: 'Latest Date',
+                                onChange: updateLatestDate,
+                                type: 'date',
+                            }),
+                            createElement(TextControl, {
+                                value: attributes.max_news_articles,
+                                label: 'Max news articles',
+                                onChange: updateMaxNewsArticles,
+                                type: 'number',
+                                min: 1,
+                                step: 1
+                            }),
+                            createElement(TextControl, {
+                                value: attributes.max_excerpt_length,
+                                label: 'Max excerpt word count',
+                                onChange: updateMaxExcerptLength,
+                                type: 'number',
+                                min: 0,
+                                max: 100,
+                                step: 1
+                            })
+                        ]
+                    )
+                )
+
             ])
-        )
+        );
     },
 
-    save: function(props) {
+    save: function (props) {
         // this can simply return 'null', which tells wordpress to just save the input attributes.
         // however, by actually saving the html, this saves the html in the database as well, which means
         // that our plugin can be disabled and the old pages will still have iframe html. however, if an unprivileged
         // user edits that page, the iframe code will be stripped out upon saving.
         // due to the html filtering, this return is not strictly used, as the server-side render method overwrites
         // this when printing onto the page (but that allows us to print out raw html without filtering, regardless of user).
-        return null
+        return null;
     }
 
 });
