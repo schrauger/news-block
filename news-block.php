@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 0.3
+Version: 0.8
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -11,9 +11,29 @@ License: GPL2
 
 //locate_template( 'simple_html_dom.php', true, true );
 require_once( 'news-block-excerpt.php' );
+require_once( 'news-block-endpoint.php');
 
+wp_register_script(
+	'news-block-js',
+	plugins_url( 'js/news-block.build.js', __FILE__ ),
+	[ 'wp-blocks', 'wp-editor', 'wp-data', 'wp-element', 'wp-i18n', 'wp-components' ],
+	filemtime( plugin_dir_path( __FILE__ ) . 'js/news-block.build.js' )
+);
 
+register_block_type(
+	'schraugerz/news-block',
+	[
+		'editor_script'   => 'news-block-js',
+		'render_callback' => 'render_news_callback' ,
+		// attributes must be defined here as well as on the client-side js file
+		'attributes'      => [ 'blog_id' => ['type' => 'integer', 'default' => 1], 'taxonomy' => ['type' => 'string'], 'taxonomy_term_mode'=> ['type' => 'string'], 'latest_date'=> ['type' => 'string'],'max_news_articles'=> ['type' => 'string'],'max_excerpt_length'=> ['type' => 'string'] ]// self::shortcode_atts()
+	]
+);
 
+function render_news_callback($attributes, $content){
+	return(var_export($attributes, true));
+
+}
 
 class news_block {
 	/**
@@ -23,15 +43,12 @@ class news_block {
 	 *
 	 * @return array
 	 */
-	public static function shortcode_atts( $attributes = [] ) {
+	public static function shortcode_atts( $attributes = []) {
+
 		$defaults = [
-			'title'               => [
-				'type'    => 'string',
-				'default' => 'News Embed'
-			],
 			'blog_id'             => [
-				'type'    => 'string',
-				'default' => '1' //get_current_blog_id()
+				'type'    => 'integer',
+				'default' => 1 //get_current_blog_id()
 			],
 			'post_type'           => [
 				'type'    => 'string',
@@ -46,7 +63,7 @@ class news_block {
 				'default' => false
 				// when false, use blacklist (any taxonomies listed will NOT show up). when true, use whitelist (only taxonomies listed will show up)
 			],
-			'taxonomy_term_slugs' => [
+			'selected_term_list' => [
 				'type'    => 'array',
 				'default' => [],
 				'items'   => [
@@ -59,12 +76,15 @@ class news_block {
 			],
 			'max_news_articles'   => [
 				'type'    => 'integer',
-				'default' => 5
+				'default' => 8
 			],
 			'max_excerpt_length'  => [
 				'type'    => 'integer',
-				'default' => 30
+				'default' => 20
 			],
+            'site' => [
+                'type' => 'integer',
+            ]
 		];
 
 		return shortcode_atts( $defaults, $attributes );
@@ -79,18 +99,19 @@ class news_block {
 
 		wp_register_script(
 			'news-block-js',
-			plugins_url( 'news-block.js', __FILE__ ),
+			plugins_url( 'js/news-block.build.js', __FILE__ ),
 			[ 'wp-blocks', 'wp-editor', 'wp-data', 'wp-element', 'wp-i18n', 'wp-components' ],
-			filemtime( plugin_dir_path( __FILE__ ) . 'news-block.js' )
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/news-block.build.js' )
 		);
 
 		register_block_type(
-			'news-module/news-block',
+			'schrauger/news-block',
 			[
 				'editor_script'   => 'news-block-js',
 				'render_callback' => [ 'news_block', 'render_news_callback' ],
 				// attributes must be defined here as well as on the client-side js file
-				'attributes'      => self::shortcode_atts()
+				'attributes'      => self::shortcode_atts(),
+				//'attributes'      => [ 'blog_id' => ['type' => 'integer', 'default' => 1], 'taxonomy' => ['type' => 'string'], 'taxonomy_term_mode'=> ['type' => 'string'], 'latest_date'=> ['type' => 'string'],'max_news_articles'=> ['type' => 'string'],'max_excerpt_length'=> ['type' => 'string'] ]// self::shortcode_atts()
 			]
 		);
 	}
@@ -200,7 +221,7 @@ class news_block {
 	 * @return WP_Query
 	 */
 	public static function internal_site_query( $attributes ) {
-		$attributes        = self::shortcode_atts( $attributes );
+		//$attributes        = self::shortcode_atts( $attributes );
 		$return_news_posts = [];
 
 		$switched_blog = false;
@@ -273,10 +294,10 @@ class news_block {
 	 * @return array
 	 */
 	public static function tax_query( $attributes ) {
-		$attributes = self::shortcode_atts( $attributes );
+		//$attributes = self::shortcode_atts( $attributes );
 
 		$return_array = [];
-		if ( $attributes[ 'taxonomy_term_mode' ] === true ) {
+		if ( $attributes[ 'taxonomy_term_mode' ] === false ) {
 			// whitelist mode.
 			$relation = "OR";
 			$operator = "IN";
@@ -287,7 +308,7 @@ class news_block {
 		}
 
 		// apply AND or OR if specifying more than one slug
-		if ( sizeof( $attributes[ 'taxonomy_term_slugs' ] ) > 1 ) {
+		if ( sizeof( $attributes[ 'selected_term_list' ] ) > 1 ) {
 			$return_array[ 'relation' ] = $relation;
 		}
 
@@ -295,7 +316,7 @@ class news_block {
 		// looping through each term and adding an explicit tax query for each one.
 		// we might be able to simply apply all terms to the 'terms' operator as it accepts an array,
 		// but I'm not sure what the behaviour is with IN vs NOT IN. we need (OR with IN) and (AND with NOT IN).
-		foreach ( $attributes[ 'taxonomy_term_slugs' ] as $slug ) {
+		foreach ( $attributes[ 'selected_term_list' ] as $slug ) {
 			array_push( $return_array, [
 				'taxonomy' => $attributes[ 'taxonomy' ],
 				'field'    => 'slug',
