@@ -1,7 +1,14 @@
 const {registerBlockType} = wp.blocks; //Blocks API
-const {createElement, Component} = wp.element; //React.createElement
+const {createElement, Component, Fragment} = wp.element; //React.createElement
 const {InspectorControls} = wp.editor; //Block inspector wrapper
-const {TextControl, SelectControl, ServerSideRender, PanelBody, ToggleControl} = wp.components; //Block inspector wrapper
+const {
+    TextControl,
+    SelectControl,
+    ServerSideRender,
+    PanelBody,
+    PanelRow,
+    ToggleControl,
+} = wp.components; //Block inspector wrapper
 const {registerStore, withSelect,} = wp.data; // used to run json requests for wordpress data (blogs, taxonomies)
 const {__} = wp.i18n;
 const {apiFetch} = wp;
@@ -22,7 +29,7 @@ class news_block extends Component {
 
     constructor() {
         super( ...arguments );
-        console.log(this.props.attributes);
+        //console.log(this.props.attributes);
         this.state = this.constructor.getInitialState(this.props.attributes);
 
         this.getSites = this.getSites.bind(this);
@@ -33,10 +40,16 @@ class news_block extends Component {
         this.updateTaxonomy = this.updateTaxonomy.bind(this);
         this.updateSelectedTerms = this.updateSelectedTerms.bind(this);
 
+
+        this.updateEarliestDate = this.updateEarliestDate.bind(this);
         this.updateLatestDate = this.updateLatestDate.bind(this);
         this.updateMaxNewsArticles = this.updateMaxNewsArticles.bind(this);
         this.updateMaxExcerptLength = this.updateMaxExcerptLength.bind(this);
+
         this.update_taxonomy_term_mode = this.update_taxonomy_term_mode.bind(this);
+        this.update_date_restriction_mode = this.update_date_restriction_mode.bind(this);
+
+
 
         this.getSites();
     }
@@ -118,6 +131,11 @@ class news_block extends Component {
         this.props.setAttributes({latest_date});
     }
 
+    updateEarliestDate  (earliest_date)  {
+        this.setState( { earliest_date} );
+        this.props.setAttributes({earliest_date});
+    }
+
     updateMaxNewsArticles  (max_news_articles)  {
         max_news_articles = parseInt(max_news_articles);
         this.setState( {max_news_articles } );
@@ -133,6 +151,11 @@ class news_block extends Component {
     update_taxonomy_term_mode  (taxonomy_term_mode)  {
         this.setState( {taxonomy_term_mode } );
         this.props.setAttributes({taxonomy_term_mode});
+    }
+
+    update_date_restriction_mode  (date_restriction_mode)  {
+        this.setState( {date_restriction_mode } );
+        this.props.setAttributes({date_restriction_mode});
     }
 
     /**
@@ -177,14 +200,17 @@ class news_block extends Component {
                         title={'News Block Controls'}
                         initialOpen={true}
                     >
-                        <SelectControl
-                            value={this.props.attributes.blog_id}
-                            label={ __( 'Select a site' )}
-                            options={options_site_list}
-                            onChange={this.updateSite}
-                        />
+                        <PanelRow>
+                            <SelectControl
+                                value={this.props.attributes.blog_id}
+                                label={ __( 'Select a site' )}
+                                options={options_site_list}
+                                onChange={this.updateSite}
+                            />
+                        </PanelRow>
+
                         {(this.props.attributes.blog_id) ?
-                            <fragment>
+                            <Fragment>
                                 <SelectControl
                                     value={this.props.attributes.taxonomy}
                                     label={ __( 'Select a taxonomy' )}
@@ -192,7 +218,7 @@ class news_block extends Component {
                                     onChange={this.updateTaxonomy}
                                 />
                                 {(this.props.attributes.taxonomy) ?
-                                    <fragment>
+                                    <Fragment>
                                         <ToggleControl
                                             label={(this.props.attributes.taxonomy_term_mode ? 'Blacklist mode active' : 'Whitelist mode active')}
                                             checked={this.props.attributes.taxonomy_term_mode}
@@ -206,26 +232,41 @@ class news_block extends Component {
                                             onChange={this.updateSelectedTerms}
                                             multiple={true}
                                         />
-                                    </fragment>
+                                    </Fragment>
                                     :
                                     []
                                 }
-                            </fragment>
+                            </Fragment>
                         :
                             []
 
                         }
 
-
-
-
-
-                        <TextControl
-                            type={'date'}
-                            value={this.props.attributes.latest_date}
-                            label={'Latest Date'}
-                            onChange={this.updateLatestDate}
+                        <ToggleControl
+                            label={(this.props.attributes.date_restriction_mode ? 'Specific date range' : 'Latest news')}
+                            checked={this.props.attributes.date_restriction_mode}
+                            onChange={this.update_date_restriction_mode}
+                            help={this.props.attributes.date_restriction_mode ? 'Show posts from a specific date range' : 'Show the most recent posts' }
                         />
+                        {(this.props.attributes.date_restriction_mode) ?
+                            <Fragment>
+                                <TextControl
+                                    type={'date'}
+                                    value={this.props.attributes.earliest_date}
+                                    label={'Earliest Date'}
+                                    onChange={this.updateEarliestDate}
+                                />
+                                <TextControl
+                                    type={'date'}
+                                    value={this.props.attributes.latest_date}
+                                    label={'Latest Date'}
+                                    onChange={this.updateLatestDate}
+                                />
+                            </Fragment>
+                            :
+                            []
+                        }
+
                         <TextControl
                             type={'number'}
                             value={this.props.attributes.max_news_articles}
@@ -281,6 +322,8 @@ registerBlockType(
             taxonomy_term_mode: {type: 'boolean', default: false},
             selected_term_list: {type: 'array', default: []},
 
+            date_restriction_mode: {type: 'boolean', default: false},
+            earliest_date: {type: 'date', default: null}, //@TODO does nothing
             latest_date: {type: 'date', default: null}, //@TODO does nothing
             max_news_articles: {type: 'number', default: 6},
             max_excerpt_length: {type: 'number', default: 55},

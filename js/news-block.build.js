@@ -79,7 +79,8 @@ var registerBlockType = wp.blocks.registerBlockType; //Blocks API
 
 var _wp$element = wp.element,
     createElement = _wp$element.createElement,
-    Component = _wp$element.Component; //React.createElement
+    Component = _wp$element.Component,
+    Fragment = _wp$element.Fragment; //React.createElement
 
 var InspectorControls = wp.editor.InspectorControls; //Block inspector wrapper
 
@@ -88,6 +89,7 @@ var _wp$components = wp.components,
     SelectControl = _wp$components.SelectControl,
     ServerSideRender = _wp$components.ServerSideRender,
     PanelBody = _wp$components.PanelBody,
+    PanelRow = _wp$components.PanelRow,
     ToggleControl = _wp$components.ToggleControl; //Block inspector wrapper
 
 var _wp$data = wp.data,
@@ -118,9 +120,9 @@ var news_block = function (_Component) {
     function news_block() {
         _classCallCheck(this, news_block);
 
+        //console.log(this.props.attributes);
         var _this = _possibleConstructorReturn(this, (news_block.__proto__ || Object.getPrototypeOf(news_block)).apply(this, arguments));
 
-        console.log(_this.props.attributes);
         _this.state = _this.constructor.getInitialState(_this.props.attributes);
 
         _this.getSites = _this.getSites.bind(_this);
@@ -131,10 +133,13 @@ var news_block = function (_Component) {
         _this.updateTaxonomy = _this.updateTaxonomy.bind(_this);
         _this.updateSelectedTerms = _this.updateSelectedTerms.bind(_this);
 
+        _this.updateEarliestDate = _this.updateEarliestDate.bind(_this);
         _this.updateLatestDate = _this.updateLatestDate.bind(_this);
         _this.updateMaxNewsArticles = _this.updateMaxNewsArticles.bind(_this);
         _this.updateMaxExcerptLength = _this.updateMaxExcerptLength.bind(_this);
+
         _this.update_taxonomy_term_mode = _this.update_taxonomy_term_mode.bind(_this);
+        _this.update_date_restriction_mode = _this.update_date_restriction_mode.bind(_this);
 
         _this.getSites();
         return _this;
@@ -230,6 +235,12 @@ var news_block = function (_Component) {
             this.props.setAttributes({ latest_date: latest_date });
         }
     }, {
+        key: 'updateEarliestDate',
+        value: function updateEarliestDate(earliest_date) {
+            this.setState({ earliest_date: earliest_date });
+            this.props.setAttributes({ earliest_date: earliest_date });
+        }
+    }, {
         key: 'updateMaxNewsArticles',
         value: function updateMaxNewsArticles(max_news_articles) {
             max_news_articles = parseInt(max_news_articles);
@@ -248,6 +259,12 @@ var news_block = function (_Component) {
         value: function update_taxonomy_term_mode(taxonomy_term_mode) {
             this.setState({ taxonomy_term_mode: taxonomy_term_mode });
             this.props.setAttributes({ taxonomy_term_mode: taxonomy_term_mode });
+        }
+    }, {
+        key: 'update_date_restriction_mode',
+        value: function update_date_restriction_mode(date_restriction_mode) {
+            this.setState({ date_restriction_mode: date_restriction_mode });
+            this.props.setAttributes({ date_restriction_mode: date_restriction_mode });
         }
 
         /**
@@ -297,14 +314,18 @@ var news_block = function (_Component) {
                         title: 'News Block Controls',
                         initialOpen: true
                     },
-                    wp.element.createElement(SelectControl, {
-                        value: this.props.attributes.blog_id,
-                        label: __('Select a site'),
-                        options: options_site_list,
-                        onChange: this.updateSite
-                    }),
+                    wp.element.createElement(
+                        PanelRow,
+                        null,
+                        wp.element.createElement(SelectControl, {
+                            value: this.props.attributes.blog_id,
+                            label: __('Select a site'),
+                            options: options_site_list,
+                            onChange: this.updateSite
+                        })
+                    ),
                     this.props.attributes.blog_id ? wp.element.createElement(
-                        'fragment',
+                        Fragment,
                         null,
                         wp.element.createElement(SelectControl, {
                             value: this.props.attributes.taxonomy,
@@ -313,7 +334,7 @@ var news_block = function (_Component) {
                             onChange: this.updateTaxonomy
                         }),
                         this.props.attributes.taxonomy ? wp.element.createElement(
-                            'fragment',
+                            Fragment,
                             null,
                             wp.element.createElement(ToggleControl, {
                                 label: this.props.attributes.taxonomy_term_mode ? 'Blacklist mode active' : 'Whitelist mode active',
@@ -330,12 +351,28 @@ var news_block = function (_Component) {
                             })
                         ) : []
                     ) : [],
-                    wp.element.createElement(TextControl, {
-                        type: 'date',
-                        value: this.props.attributes.latest_date,
-                        label: 'Latest Date',
-                        onChange: this.updateLatestDate
+                    wp.element.createElement(ToggleControl, {
+                        label: this.props.attributes.date_restriction_mode ? 'Specific date range' : 'Latest news',
+                        checked: this.props.attributes.date_restriction_mode,
+                        onChange: this.update_date_restriction_mode,
+                        help: this.props.attributes.date_restriction_mode ? 'Show posts from a specific date range' : 'Show the most recent posts'
                     }),
+                    this.props.attributes.date_restriction_mode ? wp.element.createElement(
+                        Fragment,
+                        null,
+                        wp.element.createElement(TextControl, {
+                            type: 'date',
+                            value: this.props.attributes.earliest_date,
+                            label: 'Earliest Date',
+                            onChange: this.updateEarliestDate
+                        }),
+                        wp.element.createElement(TextControl, {
+                            type: 'date',
+                            value: this.props.attributes.latest_date,
+                            label: 'Latest Date',
+                            onChange: this.updateLatestDate
+                        })
+                    ) : [],
                     wp.element.createElement(TextControl, {
                         type: 'number',
                         value: this.props.attributes.max_news_articles,
@@ -385,6 +422,8 @@ registerBlockType('schrauger/news-block', {
         taxonomy_term_mode: { type: 'boolean', default: false },
         selected_term_list: { type: 'array', default: [] },
 
+        date_restriction_mode: { type: 'boolean', default: false },
+        earliest_date: { type: 'date', default: null }, //@TODO does nothing
         latest_date: { type: 'date', default: null }, //@TODO does nothing
         max_news_articles: { type: 'number', default: 6 },
         max_excerpt_length: { type: 'number', default: 55 }
