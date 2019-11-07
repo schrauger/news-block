@@ -205,7 +205,12 @@ class news_block_endpoint {
 		}
 
 		foreach ($wp_list as $taxonomy) {
-			array_push($return_array, [ 'value' => $taxonomy->name, 'label' => $taxonomy->label . " (" . $taxonomy->name . ")"]);
+
+			// make sure the taxonomy has terms that are used. if it has terms, but they're all unused, then don't show this taxonomy.
+			$term_list = get_terms(['taxonomy' => $taxonomy->name, 'hide_empty' => true]);
+			if (count($term_list) > 0){
+				array_push($return_array, [ 'value' => $taxonomy->name, 'label' => $taxonomy->label . " (" . $taxonomy->name . ")"]);
+			}
 		}
 
 		if ( $switched_blog ) {

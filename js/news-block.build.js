@@ -100,19 +100,59 @@ var __ = wp.i18n.__;
 var _wp = wp,
     apiFetch = _wp.apiFetch;
 
+
+registerBlockType('schrauger/news-block', {
+    title: __('News Block', 'news-block-for-gutenberg'),
+    description: __('Lists the most recent posts from newest to oldest, with the ability to pull in and sort from multiple internal and external sources.', 'news-block-for-gutenberg'),
+    icon: 'format-aside',
+    category: 'embed',
+    attributes: {
+        // need ability for two or more sources. probably repeating field.
+        // one source option is local, and then you choose the blog (generally 1 ie main blog)
+        // another source is local and must be an rss feed. use url parameters to filter external news
+        blog_id: { type: 'number', default: 1 },
+        taxonomy: { type: 'string', default: '' },
+        taxonomy_term_mode: { type: 'boolean', default: false },
+        selected_term_list: { type: 'array', default: [] },
+        date_restriction_mode: { type: 'boolean', default: false },
+        earliest_date: { type: 'date', default: null },
+        latest_date: { type: 'date', default: null },
+        max_news_articles: { type: 'number', default: 6 },
+        max_excerpt_length: { type: 'number', default: 55 }
+    },
+
+    edit: news_block,
+
+    save: function save(_ref) {
+        var props = _ref.props,
+            className = _ref.className;
+
+        // this can simply return 'null', which tells wordpress to just save the input attributes.
+        // however, by actually saving the html, this saves the html in the database as well, which means
+        // that our plugin can be disabled and the old pages will still have iframe html. however, if an unprivileged
+        // user edits that page, the iframe code will be stripped out upon saving.
+        // due to the html filtering, this return is not strictly used, as the server-side render method overwrites
+        // this when printing onto the page (but that allows us to print out raw html without filtering, regardless of user).
+        return null;
+    }
+});
+
 var news_block = function (_Component) {
     _inherits(news_block, _Component);
 
     _createClass(news_block, null, [{
         key: 'getInitialState',
-        value: function getInitialState(attributes) {
+
+
+        // state is used to save temporary data, like the list of sites or taxonomies.
+        // we don't need that saved and retrieved from database fields.
+        // for data we save in order to render, that gets set in the attributes.
+        value: function getInitialState() {
             return {
                 sites: [],
+                post_types: [],
                 taxonomies: [],
-                terms: [],
-                blog_id: attributes.blog_id,
-                taxonomy: attributes.taxonomy,
-                selected_term_list: attributes.selected_term_list
+                terms: []
             };
         }
     }]);
@@ -123,13 +163,14 @@ var news_block = function (_Component) {
         //console.log(this.props.attributes);
         var _this = _possibleConstructorReturn(this, (news_block.__proto__ || Object.getPrototypeOf(news_block)).apply(this, arguments));
 
-        _this.state = _this.constructor.getInitialState(_this.props.attributes);
+        _this.state = _this.constructor.getInitialState();
 
         _this.getSites = _this.getSites.bind(_this);
         _this.getTaxonomies = _this.getTaxonomies.bind(_this);
         _this.getTerms = _this.getTerms.bind(_this);
 
         _this.updateSite = _this.updateSite.bind(_this);
+        _this.updatePostType = _this.updatePostType.bind(_this);
         _this.updateTaxonomy = _this.updateTaxonomy.bind(_this);
         _this.updateSelectedTerms = _this.updateSelectedTerms.bind(_this);
 
@@ -153,34 +194,56 @@ var news_block = function (_Component) {
             return apiFetch({ path: 'schrauger/news-block/v1/get-sites/' }).then(function (sites) {
                 _this2.setState({ sites: sites });
 
-                if (_this2.state.blog_id) {
-                    _this2.getTaxonomies(_this2.state.blog_id);
+                if (_this2.props.attributes.blog_id) {
+                    _this2.getPostTypes(_this2.props.attributes.blog_id);
                 }
             });
         }
     }, {
-        key: 'getTaxonomies',
-        value: function getTaxonomies(site) {
+        key: 'getPostTypes',
+        value: function getPostTypes(site) {
             var _this3 = this;
 
             var path = 'schrauger/news-block/v1/';
             if (site) {
                 path = path + 'site/' + site + '/';
             }
+            path = path + 'get-post-types';
+
+            return apiFetch({ path: path }).then(function (post_types) {
+                _this3.setState({ post_types: post_types });
+
+                if (_this3.props.attributes.post_type) {
+                    _this3.getTaxonomies(_this3.props.attributes.post_type, _this3.props.attributes.blog_id);
+                }
+            });
+        }
+    }, {
+        key: 'getTaxonomies',
+        value: function getTaxonomies(post_type, site) {
+            var _this4 = this;
+
+            var path = 'schrauger/news-block/v1/';
+            if (site) {
+                path = path + 'site/' + site + '/';
+            }
+            if (post_type) {
+                path = path + 'post-type/' + post_type + '/';
+            }
             path = path + 'get-taxonomies';
 
             return apiFetch({ path: path }).then(function (taxonomies) {
-                _this3.setState({ taxonomies: taxonomies });
+                _this4.setState({ taxonomies: taxonomies });
 
-                if (_this3.state.taxonomy) {
-                    _this3.getTerms(_this3.state.taxonomy, _this3.state.blog_id);
+                if (_this4.props.attributes.taxonomy) {
+                    _this4.getTerms(_this4.props.attributes.taxonomy, _this4.props.attributes.blog_id);
                 }
             });
         }
     }, {
         key: 'getTerms',
         value: function getTerms(taxonomy, site) {
-            var _this4 = this;
+            var _this5 = this;
 
             var path = 'schrauger/news-block/v1/';
             if (site) {
@@ -192,29 +255,37 @@ var news_block = function (_Component) {
             path = path + 'get-terms';
 
             return apiFetch({ path: path }).then(function (terms) {
-                _this4.setState({ terms: terms });
+                _this5.setState({ terms: terms });
             });
         }
     }, {
         key: 'updateSite',
         value: function updateSite(blog_id) {
-            this.setState({ blog_id: parseInt(blog_id) });
             this.props.setAttributes({
                 blog_id: parseInt(blog_id)
             });
-            this.getTaxonomies(blog_id); // get new list of taxonomies after changing site
+            this.getPostTypes(blog_id); // get new list of taxonomies after changing site
+        }
+    }, {
+        key: 'updatePostType',
+        value: function updatePostType(post_type) {
+            this.props.setAttributes({ post_type: post_type });
+
+            // force reset of selected taxonomy, and get new list of taxonomies after changing post type
+            var blog_id = this.props.attributes.blog_id;
+            this.props.setAttributes({
+                taxonomy: ''
+            });
+            this.getTaxonomies(post_type, blog_id);
         }
     }, {
         key: 'updateTaxonomy',
         value: function updateTaxonomy(taxonomy) {
-            this.setState({ taxonomy: taxonomy });
-            this.props.setAttributes({
-                taxonomy: taxonomy
-            });
-            var blog_id = this.state.blog_id;
+            //        this.setState( { taxonomy: taxonomy });
+            this.props.setAttributes({ taxonomy: taxonomy });
 
             // force reset of selected terms, and get new list of terms after changing taxonomy
-            this.setState({ selected_term_list: [] });
+            var blog_id = this.props.attributes.blog_id;
             this.props.setAttributes({
                 selected_term_list: []
             });
@@ -223,47 +294,38 @@ var news_block = function (_Component) {
     }, {
         key: 'updateSelectedTerms',
         value: function updateSelectedTerms(selected_term_list) {
-            this.setState({ selected_term_list: selected_term_list });
-            this.props.setAttributes({
-                selected_term_list: selected_term_list
-            });
+            this.props.setAttributes({ selected_term_list: selected_term_list });
         }
     }, {
         key: 'updateLatestDate',
         value: function updateLatestDate(latest_date) {
-            this.setState({ latest_date: latest_date });
             this.props.setAttributes({ latest_date: latest_date });
         }
     }, {
         key: 'updateEarliestDate',
         value: function updateEarliestDate(earliest_date) {
-            this.setState({ earliest_date: earliest_date });
             this.props.setAttributes({ earliest_date: earliest_date });
         }
     }, {
         key: 'updateMaxNewsArticles',
         value: function updateMaxNewsArticles(max_news_articles) {
             max_news_articles = parseInt(max_news_articles);
-            this.setState({ max_news_articles: max_news_articles });
             this.props.setAttributes({ max_news_articles: max_news_articles });
         }
     }, {
         key: 'updateMaxExcerptLength',
         value: function updateMaxExcerptLength(max_excerpt_length) {
             max_excerpt_length = parseInt(max_excerpt_length);
-            this.setState({ max_excerpt_length: max_excerpt_length });
             this.props.setAttributes({ max_excerpt_length: max_excerpt_length });
         }
     }, {
         key: 'update_taxonomy_term_mode',
         value: function update_taxonomy_term_mode(taxonomy_term_mode) {
-            this.setState({ taxonomy_term_mode: taxonomy_term_mode });
             this.props.setAttributes({ taxonomy_term_mode: taxonomy_term_mode });
         }
     }, {
         key: 'update_date_restriction_mode',
         value: function update_date_restriction_mode(date_restriction_mode) {
-            this.setState({ date_restriction_mode: date_restriction_mode });
             this.props.setAttributes({ date_restriction_mode: date_restriction_mode });
         }
 
@@ -289,6 +351,14 @@ var news_block = function (_Component) {
             if (this.state.sites.length > 0) {
                 this.state.sites.forEach(function (site) {
                     options_site_list.push({ value: site.value, label: site.label });
+                });
+            }
+
+            var options_post_type_list = [{ value: '', label: __('Select a Post Type'), disabled: true }]; // value must be empty string; if null, the value ends up being the label.
+            if (this.state.post_types.length > 0) {
+                console.log(this.state.post_types);
+                this.state.post_types.forEach(function (post_type) {
+                    options_post_type_list.push({ value: post_type.value, label: post_type.label });
                 });
             }
 
@@ -328,34 +398,44 @@ var news_block = function (_Component) {
                         Fragment,
                         null,
                         wp.element.createElement(SelectControl, {
-                            value: this.props.attributes.taxonomy,
-                            label: __('Select a taxonomy'),
-                            options: options_taxonomy_list,
-                            onChange: this.updateTaxonomy
+                            value: this.props.attributes.post_type,
+                            label: __('Select a post type'),
+                            options: options_post_type_list,
+                            onChange: this.updatePostType
                         }),
-                        this.props.attributes.taxonomy ? wp.element.createElement(
+                        this.props.attributes.post_type ? wp.element.createElement(
                             Fragment,
                             null,
-                            wp.element.createElement(ToggleControl, {
-                                label: this.props.attributes.taxonomy_term_mode ? 'Blacklist mode active' : 'Whitelist mode active',
-                                checked: this.props.attributes.taxonomy_term_mode,
-                                onChange: this.update_taxonomy_term_mode,
-                                help: this.props.attributes.taxonomy_term_mode ? 'Exclude posts containing any of the specified terms' : 'Only include posts containing any of the specified terms'
-                            }),
                             wp.element.createElement(SelectControl, {
-                                value: this.props.attributes.selected_term_list,
-                                label: this.props.attributes.taxonomy_term_mode ? __('Select terms to exclude') : __('Select terms to include'),
-                                options: options_terms_list,
-                                onChange: this.updateSelectedTerms,
-                                multiple: true
-                            })
+                                value: this.props.attributes.taxonomy,
+                                label: __('Select a taxonomy'),
+                                options: options_taxonomy_list,
+                                onChange: this.updateTaxonomy
+                            }),
+                            this.props.attributes.taxonomy ? wp.element.createElement(
+                                Fragment,
+                                null,
+                                wp.element.createElement(ToggleControl, {
+                                    label: this.props.attributes.taxonomy_term_mode ? 'Blacklist mode active' : 'Whitelist mode active',
+                                    checked: this.props.attributes.taxonomy_term_mode,
+                                    onChange: this.update_taxonomy_term_mode,
+                                    help: this.props.attributes.taxonomy_term_mode ? 'Exclude posts containing any of the specified terms' : 'Only include posts containing any of the specified terms'
+                                }),
+                                wp.element.createElement(SelectControl, {
+                                    value: this.props.attributes.selected_term_list,
+                                    label: this.props.attributes.taxonomy_term_mode ? __('Select terms to exclude') : __('Select terms to include'),
+                                    options: options_terms_list,
+                                    onChange: this.updateSelectedTerms,
+                                    multiple: true
+                                })
+                            ) : []
                         ) : []
                     ) : [],
                     wp.element.createElement(ToggleControl, {
-                        label: this.props.attributes.date_restriction_mode ? 'Specific date range' : 'Latest news',
+                        label: this.props.attributes.date_restriction_mode ? 'Date filter (enabled)' : 'Date filter (disabled)',
                         checked: this.props.attributes.date_restriction_mode,
                         onChange: this.update_date_restriction_mode,
-                        help: this.props.attributes.date_restriction_mode ? 'Show posts from a specific date range' : 'Show the most recent posts'
+                        help: this.props.attributes.date_restriction_mode ? 'Show posts from a specific date range' : 'Currently showing the most recent posts'
                     }),
                     this.props.attributes.date_restriction_mode ? wp.element.createElement(
                         Fragment,
@@ -407,45 +487,6 @@ var news_block = function (_Component) {
 
     return news_block;
 }(Component);
-
-registerBlockType('schrauger/news-block', {
-    title: __('News Block', 'news-block-for-gutenberg'),
-    description: __('Lists the most recent posts from newest to oldest, with the ability to pull in and sort from multiple internal and external sources.', 'news-block-for-gutenberg'),
-    icon: 'format-aside',
-    category: 'embed',
-    attributes: {
-        // need ability for two or more sources. probably repeating field.
-        // one source option is local, and then you choose the blog (generally 1 ie main blog)
-        // another source is local and must be an rss feed. use url parameters to filter external news
-        blog_id: { type: 'number', default: 1 },
-        taxonomy: { type: 'string', default: '' },
-        taxonomy_term_mode: { type: 'boolean', default: false },
-        selected_term_list: { type: 'array', default: [] },
-
-        date_restriction_mode: { type: 'boolean', default: false },
-        earliest_date: { type: 'date', default: null }, //@TODO does nothing
-        latest_date: { type: 'date', default: null }, //@TODO does nothing
-        max_news_articles: { type: 'number', default: 6 },
-        max_excerpt_length: { type: 'number', default: 55 }
-        //site: {type: 'number', default: 1},
-
-    },
-
-    edit: news_block,
-
-    save: function save(_ref) {
-        var props = _ref.props,
-            className = _ref.className;
-
-        // this can simply return 'null', which tells wordpress to just save the input attributes.
-        // however, by actually saving the html, this saves the html in the database as well, which means
-        // that our plugin can be disabled and the old pages will still have iframe html. however, if an unprivileged
-        // user edits that page, the iframe code will be stripped out upon saving.
-        // due to the html filtering, this return is not strictly used, as the server-side render method overwrites
-        // this when printing onto the page (but that allows us to print out raw html without filtering, regardless of user).
-        return null;
-    }
-});
 
 /***/ })
 /******/ ]);

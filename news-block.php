@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 0.9
+Version: 0.10
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -22,9 +22,41 @@ class news_block {
 	 *
 	 * @return array
 	 */
-	public static function shortcode_atts( $attributes = [] ) {
+	public static function block_atts( $attributes = [] ) {
 
 		$defaults = [
+			'sources' =>     [
+				'type' => 'array',
+				'default' => [],
+				'query' => [
+					'blog_id'            => [
+						'type'    => 'integer',
+						'default' => 1 //get_current_blog_id()
+					],
+					'post_type'          => [
+						'type'    => 'string',
+						'default' => 'news'
+					],
+					'taxonomy'           => [
+						'type'    => 'string',
+						'default' => 'news_category'
+					],
+					'taxonomy_term_mode' => [
+						'type'    => 'boolean',
+						'default' => false
+						// when false, use blacklist (any taxonomies listed will NOT show up). when true, use whitelist (only taxonomies listed will show up)
+					],
+					'selected_term_list' => [
+						'type'    => 'array',
+						'default' => [],
+						'items'   => [
+							'type' => 'string'
+						]
+					],
+				]
+
+			],
+
 			'blog_id'            => [
 				'type'    => 'integer',
 				'default' => 1 //get_current_blog_id()
@@ -35,7 +67,7 @@ class news_block {
 			],
 			'taxonomy'           => [
 				'type'    => 'string',
-				'default' => 'news_category'
+				'default' => ''
 			],
 			'taxonomy_term_mode' => [
 				'type'    => 'boolean',
@@ -98,7 +130,7 @@ class news_block {
 				'editor_script'   => 'news-block-js',
 				'render_callback' => [ 'news_block', 'render_news_callback' ],
 				// attributes must be defined here as well as on the client-side js file
-				'attributes'      => self::shortcode_atts(),
+				'attributes'      => self::block_atts(),
 				//'attributes'      => [ 'blog_id' => ['type' => 'integer', 'default' => 1], 'taxonomy' => ['type' => 'string'], 'taxonomy_term_mode'=> ['type' => 'string'], 'latest_date'=> ['type' => 'string'],'max_news_articles'=> ['type' => 'string'],'max_excerpt_length'=> ['type' => 'string'] ]// self::shortcode_atts()
 			]
 		);
@@ -141,7 +173,7 @@ class news_block {
 	 * @return string // like shortcode callbacks, this is the html that we render in place of the block.
 	 */
 	public static function render_news_callback( $attributes, $content ) {
-		$attributes           = self::shortcode_atts( $attributes );
+		$attributes           = self::block_atts( $attributes );
 		$return_rendered_html = "";
 
 		$news_posts = self::internal_site_query( $attributes );
@@ -196,7 +228,7 @@ class news_block {
 
 			return $return_rendered_html;
 		} else {
-			return "No posts found";
+			return "No posts found"; //@TODO style
 		}
 	}
 
@@ -282,7 +314,7 @@ class news_block {
 	}
 
 	public static function external_site_query( $attributes ) {
-		$attributes = self::shortcode_atts( $attributes );
+		$attributes = self::block_atts( $attributes );
 		$news_posts = [];
 		add_filter( 'wp_feed_cache_transient_lifetime', create_function( '$a', 'return 600;' ) ); // refresh every 10 minutes
 		$feed = fetch_feed( "https://ucfhealth.com/feed/?post_type=news&news_category=crosspost-to-com" );
