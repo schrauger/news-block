@@ -207,7 +207,7 @@ var News_block_component = function (_Component3) {
             return wp.element.createElement(
                 PanelBody,
                 {
-                    title: 'Source #1 Controls',
+                    title: this.props.title,
                     initialOpen: true
                 },
                 wp.element.createElement(ToggleControl, {
@@ -523,12 +523,9 @@ var news_block = function (_Component4) {
                     title: 'News Block Sources',
                     initialOpen: false
                 }),
-                wp.element.createElement(
-                    'div',
-                    null,
-                    'howdy'
-                ),
                 wp.element.createElement(News_block_component, {
+                    title: 'Source #1 properties',
+
                     source_mode: this.props.attributes.source_mode,
                     update_source_mode: this.update_source_mode,
 
@@ -554,11 +551,6 @@ var news_block = function (_Component4) {
                     updateRSSUrl: this.updateRSSUrl
 
                 }),
-                wp.element.createElement(
-                    'div',
-                    null,
-                    'end howdy'
-                ),
                 wp.element.createElement(
                     PanelBody,
                     {

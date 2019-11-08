@@ -91,7 +91,7 @@ class News_block_component extends Component {
     render() {
         return (
             <PanelBody
-                title={'Source #1 Controls'}
+                title={this.props.title}
                 initialOpen={true}
             >
                 <ToggleControl
@@ -374,8 +374,9 @@ class news_block extends Component {
                     initialOpen={false}
                 >
                 </PanelBody >
-                <div >howdy</div >
                 <News_block_component
+                    title={'Source #1 properties'}
+
                     source_mode={this.props.attributes.source_mode}
                     update_source_mode={this.update_source_mode}
 
@@ -401,7 +402,6 @@ class news_block extends Component {
                     updateRSSUrl={this.updateRSSUrl}
 
                 />
-                <div >end howdy</div >
 
                 <PanelBody
                     title={'News Block Controls'}
