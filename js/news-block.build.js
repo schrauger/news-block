@@ -100,45 +100,132 @@ var __ = wp.i18n.__;
 var _wp = wp,
     apiFetch = _wp.apiFetch;
 
+var News_block_component_internal = function (_Component) {
+    _inherits(News_block_component_internal, _Component);
 
-registerBlockType('schrauger/news-block', {
-    title: __('News Block', 'news-block-for-gutenberg'),
-    description: __('Lists the most recent posts from newest to oldest, with the ability to pull in and sort from multiple internal and external sources.', 'news-block-for-gutenberg'),
-    icon: 'format-aside',
-    category: 'embed',
-    attributes: {
-        // need ability for two or more sources. probably repeating field.
-        // one source option is local, and then you choose the blog (generally 1 ie main blog)
-        // another source is local and must be an rss feed. use url parameters to filter external news
-        blog_id: { type: 'number', default: 1 },
-        taxonomy: { type: 'string', default: '' },
-        taxonomy_term_mode: { type: 'boolean', default: false },
-        selected_term_list: { type: 'array', default: [] },
-        date_restriction_mode: { type: 'boolean', default: false },
-        earliest_date: { type: 'date', default: null },
-        latest_date: { type: 'date', default: null },
-        max_news_articles: { type: 'number', default: 6 },
-        max_excerpt_length: { type: 'number', default: 55 }
-    },
+    function News_block_component_internal() {
+        _classCallCheck(this, News_block_component_internal);
 
-    edit: news_block,
-
-    save: function save(_ref) {
-        var props = _ref.props,
-            className = _ref.className;
-
-        // this can simply return 'null', which tells wordpress to just save the input attributes.
-        // however, by actually saving the html, this saves the html in the database as well, which means
-        // that our plugin can be disabled and the old pages will still have iframe html. however, if an unprivileged
-        // user edits that page, the iframe code will be stripped out upon saving.
-        // due to the html filtering, this return is not strictly used, as the server-side render method overwrites
-        // this when printing onto the page (but that allows us to print out raw html without filtering, regardless of user).
-        return null;
+        return _possibleConstructorReturn(this, (News_block_component_internal.__proto__ || Object.getPrototypeOf(News_block_component_internal)).apply(this, arguments));
     }
-});
 
-var news_block = function (_Component) {
-    _inherits(news_block, _Component);
+    _createClass(News_block_component_internal, [{
+        key: 'render',
+        value: function render() {
+            return wp.element.createElement(
+                Fragment,
+                null,
+                wp.element.createElement(SelectControl, {
+                    value: this.props.blog_id,
+                    label: __('Select a site'),
+                    options: this.props.sites,
+                    onChange: this.props.updateSite
+                }),
+                this.props.blog_id ? wp.element.createElement(
+                    Fragment,
+                    null,
+                    wp.element.createElement(SelectControl, {
+                        value: this.props.post_type,
+                        label: __('Select a post type'),
+                        options: this.props.post_types,
+                        onChange: this.props.updatePostType
+                    }),
+                    this.props.post_type ? wp.element.createElement(
+                        Fragment,
+                        null,
+                        wp.element.createElement(SelectControl, {
+                            value: this.props.taxonomy,
+                            label: __('Select a taxonomy'),
+                            options: this.props.taxonomies,
+                            onChange: this.props.updateTaxonomy
+                        }),
+                        this.props.taxonomy ? wp.element.createElement(
+                            Fragment,
+                            null,
+                            wp.element.createElement(ToggleControl, {
+                                label: this.props.taxonomy_term_mode ? 'Term filter (blacklist)' : 'Term filter (whitelist)',
+                                checked: this.props.taxonomy_term_mode,
+                                onChange: this.props.update_taxonomy_term_mode,
+                                help: this.props.taxonomy_term_mode ? 'Exclude posts containing any of the specified terms' : 'Only include posts containing any of the specified terms'
+                            }),
+                            wp.element.createElement(SelectControl, {
+                                value: this.props.selected_term_list,
+                                label: this.props.taxonomy_term_mode ? __('Select terms to exclude') : __('Select terms to include'),
+                                options: this.props.terms,
+                                onChange: this.props.updateSelectedTerms,
+                                multiple: true
+                            })
+                        ) : []
+                    ) : []
+                ) : []
+            );
+        }
+    }]);
+
+    return News_block_component_internal;
+}(Component);
+
+var News_block_component_external = function (_Component2) {
+    _inherits(News_block_component_external, _Component2);
+
+    function News_block_component_external() {
+        _classCallCheck(this, News_block_component_external);
+
+        return _possibleConstructorReturn(this, (News_block_component_external.__proto__ || Object.getPrototypeOf(News_block_component_external)).apply(this, arguments));
+    }
+
+    _createClass(News_block_component_external, [{
+        key: 'render',
+        value: function render() {
+            return wp.element.createElement(TextControl, {
+                type: 'string',
+                value: this.props.rss_url,
+                label: 'RSS Url',
+                onChange: this.props.updateRSSUrl
+            });
+        }
+    }]);
+
+    return News_block_component_external;
+}(Component);
+
+// note: React components must start with a Capital letter
+
+
+var News_block_component = function (_Component3) {
+    _inherits(News_block_component, _Component3);
+
+    function News_block_component() {
+        _classCallCheck(this, News_block_component);
+
+        return _possibleConstructorReturn(this, (News_block_component.__proto__ || Object.getPrototypeOf(News_block_component)).apply(this, arguments));
+    }
+
+    _createClass(News_block_component, [{
+        key: 'render',
+        value: function render() {
+            return wp.element.createElement(
+                PanelBody,
+                {
+                    title: 'Source #1 Controls',
+                    initialOpen: true
+                },
+                wp.element.createElement(ToggleControl, {
+                    label: this.props.source_mode ? 'Source (external)' : 'Source (internal)',
+                    checked: this.props.source_mode,
+                    onChange: this.props.update_source_mode,
+                    help: this.props.source_mode ? 'Get posts from an RSS feed' : 'Get posts from WordPress'
+                }),
+                !this.props.source_mode ? wp.element.createElement(News_block_component_internal, this.props) : wp.element.createElement(News_block_component_external, this.props)
+            );
+        }
+    }]);
+
+    return News_block_component;
+}(Component);
+
+var news_block = function (_Component4) {
+    _inherits(news_block, _Component4);
 
     _createClass(news_block, null, [{
         key: 'getInitialState',
@@ -149,60 +236,93 @@ var news_block = function (_Component) {
         // for data we save in order to render, that gets set in the attributes.
         value: function getInitialState() {
             return {
-                sites: [],
-                post_types: [],
-                taxonomies: [],
-                terms: []
+                sites: [{ value: 0, label: __('Loading sites...'), disabled: true }],
+                post_types: [{ value: '', label: __('Loading post types...'), disabled: true }],
+                taxonomies: [{ value: '', label: __('Loading taxonomies...'), disabled: true }],
+                terms: [{ value: '', label: __('Loading terms...'), disabled: true }]
             };
+        }
+
+        /**
+         * Returns a list of all methods (functions) for a given object, and optionally only those methods whose name begins with a specific string
+         * @param obj
+         * @param prefix_filter Filter list of methods to only include those starting with this string
+         * @returns {string[]} Array of methods from object
+         */
+
+    }, {
+        key: 'getMethods',
+        value: function getMethods(obj) {
+            var prefix_filter = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+
+            return Object.getOwnPropertyNames(obj).filter(function (item) {
+                if (prefix_filter) {
+                    return typeof obj[item] === 'function' && item.startsWith(prefix_filter);
+                } else {
+                    return typeof obj[item] === 'function';
+                }
+            });
         }
     }]);
 
+    // Call super(props) and bind functions
     function news_block() {
         _classCallCheck(this, news_block);
 
-        //console.log(this.props.attributes);
-        var _this = _possibleConstructorReturn(this, (news_block.__proto__ || Object.getPrototypeOf(news_block)).apply(this, arguments));
+        var _this4 = _possibleConstructorReturn(this, (news_block.__proto__ || Object.getPrototypeOf(news_block)).apply(this, arguments));
 
-        _this.state = _this.constructor.getInitialState();
+        _this4.state = _this4.constructor.getInitialState();
 
-        _this.getSites = _this.getSites.bind(_this);
-        _this.getTaxonomies = _this.getTaxonomies.bind(_this);
-        _this.getTerms = _this.getTerms.bind(_this);
+        // Need to bind 'this' to all of the methods (functions) of the news_block class. Listing them all individually started
+        // to get long, so instead we request all the methods on the 'this' object, and then bind 'this' to them if they're
+        // one of our 'get' or 'update' methods
+        _this4.constructor.getMethods(Object.getPrototypeOf(_this4), 'get').forEach(function (func_name) {
+            _this4[func_name] = _this4[func_name].bind(_this4);
+        });
+        _this4.constructor.getMethods(Object.getPrototypeOf(_this4), 'update').forEach(function (func_name) {
+            _this4[func_name] = _this4[func_name].bind(_this4);
+        });
 
-        _this.updateSite = _this.updateSite.bind(_this);
-        _this.updatePostType = _this.updatePostType.bind(_this);
-        _this.updateTaxonomy = _this.updateTaxonomy.bind(_this);
-        _this.updateSelectedTerms = _this.updateSelectedTerms.bind(_this);
-
-        _this.updateEarliestDate = _this.updateEarliestDate.bind(_this);
-        _this.updateLatestDate = _this.updateLatestDate.bind(_this);
-        _this.updateMaxNewsArticles = _this.updateMaxNewsArticles.bind(_this);
-        _this.updateMaxExcerptLength = _this.updateMaxExcerptLength.bind(_this);
-
-        _this.update_taxonomy_term_mode = _this.update_taxonomy_term_mode.bind(_this);
-        _this.update_date_restriction_mode = _this.update_date_restriction_mode.bind(_this);
-
-        _this.getSites();
-        return _this;
+        return _this4;
     }
 
+    // Request data from endpoint
+
+
     _createClass(news_block, [{
+        key: 'componentDidMount',
+        value: function componentDidMount() {
+            this.getSites();
+        }
+    }, {
         key: 'getSites',
         value: function getSites() {
-            var _this2 = this;
+            var _this5 = this;
 
+            this.setState({ sites: [{ value: '', label: __('Loading sites...'), disabled: true }] });
             return apiFetch({ path: 'schrauger/news-block/v1/get-sites/' }).then(function (sites) {
-                _this2.setState({ sites: sites });
+                // load sites into select list
+                var options_site_list = [];
+                if (sites.length > 0) {
+                    options_site_list.push({ value: 0, label: __('Select a site'), disabled: true });
+                    sites.forEach(function (site) {
+                        options_site_list.push({ value: site.value, label: site.label });
+                    });
+                } else {
+                    options_site_list.push({ value: 0, label: __('No valid sites'), disabled: true });
+                }
 
-                if (_this2.props.attributes.blog_id) {
-                    _this2.getPostTypes(_this2.props.attributes.blog_id);
+                _this5.setState({ sites: options_site_list });
+
+                if (_this5.props.attributes.blog_id) {
+                    _this5.getPostTypes(_this5.props.attributes.blog_id);
                 }
             });
         }
     }, {
         key: 'getPostTypes',
         value: function getPostTypes(site) {
-            var _this3 = this;
+            var _this6 = this;
 
             var path = 'schrauger/news-block/v1/';
             if (site) {
@@ -210,18 +330,31 @@ var news_block = function (_Component) {
             }
             path = path + 'get-post-types';
 
+            this.setState({ post_types: [{ value: '', label: __('Loading post types...'), disabled: true }] });
             return apiFetch({ path: path }).then(function (post_types) {
-                _this3.setState({ post_types: post_types });
 
-                if (_this3.props.attributes.post_type) {
-                    _this3.getTaxonomies(_this3.props.attributes.post_type, _this3.props.attributes.blog_id);
+                // load post types into select list
+                var options_post_type_list = [];
+                if (post_types.length > 0) {
+                    options_post_type_list.push({ value: '', label: __('Select a post type'), disabled: true }); // value must be empty string; if null, the value ends up being the label.
+                    post_types.forEach(function (post_type) {
+                        options_post_type_list.push({ value: post_type.value, label: post_type.label });
+                    });
+                } else {
+                    options_post_type_list.push({ value: '', label: __('No valid post types'), disabled: true });
+                }
+
+                _this6.setState({ post_types: options_post_type_list });
+
+                if (_this6.props.attributes.post_type) {
+                    _this6.getTaxonomies(_this6.props.attributes.post_type, _this6.props.attributes.blog_id);
                 }
             });
         }
     }, {
         key: 'getTaxonomies',
         value: function getTaxonomies(post_type, site) {
-            var _this4 = this;
+            var _this7 = this;
 
             var path = 'schrauger/news-block/v1/';
             if (site) {
@@ -232,18 +365,32 @@ var news_block = function (_Component) {
             }
             path = path + 'get-taxonomies';
 
+            this.setState({ taxonomies: [{ value: '', label: __('Loading taxonomies...'), disabled: true }] });
             return apiFetch({ path: path }).then(function (taxonomies) {
-                _this4.setState({ taxonomies: taxonomies });
 
-                if (_this4.props.attributes.taxonomy) {
-                    _this4.getTerms(_this4.props.attributes.taxonomy, _this4.props.attributes.blog_id);
+                // load taxonomies into select list
+                var options_taxonomy_list = [];
+                if (taxonomies.length > 0) {
+                    options_taxonomy_list.push({ value: '', label: __('Select a taxonomy'), disabled: true }); // value must be empty string; if null, the value ends up being the label.
+
+                    taxonomies.forEach(function (taxonomy) {
+                        options_taxonomy_list.push({ value: taxonomy.value, label: taxonomy.label });
+                    });
+                } else {
+                    options_taxonomy_list = [{ value: '', label: __('No valid taxonomies'), disabled: true }];
+                }
+
+                _this7.setState({ taxonomies: options_taxonomy_list });
+
+                if (_this7.props.attributes.taxonomy) {
+                    _this7.getTerms(_this7.props.attributes.taxonomy, _this7.props.attributes.blog_id);
                 }
             });
         }
     }, {
         key: 'getTerms',
         value: function getTerms(taxonomy, site) {
-            var _this5 = this;
+            var _this8 = this;
 
             var path = 'schrauger/news-block/v1/';
             if (site) {
@@ -254,9 +401,25 @@ var news_block = function (_Component) {
             }
             path = path + 'get-terms';
 
+            this.setState({ terms: [{ value: '', label: __('Loading terms...'), disabled: true }] });
             return apiFetch({ path: path }).then(function (terms) {
-                _this5.setState({ terms: terms });
+                // load terms into multi-select list
+                var options_terms_list = []; // { value: null, label: (this.props.attributes.taxonomy_term_mode ? __('Select terms to exclude' ) : __('Select terms to include') ), disabled: true,  } ];
+                if (terms.length > 0) {
+                    terms.forEach(function (term) {
+                        options_terms_list.push({ value: term.value, label: term.label });
+                    });
+                } else {
+                    options_terms_list.push({ value: '', label: __('No valid terms'), disabled: true });
+                }
+
+                _this8.setState({ terms: options_terms_list });
             });
+        }
+    }, {
+        key: 'updateRSSUrl',
+        value: function updateRSSUrl(rss_url) {
+            this.props.setAttributes({ rss_url: rss_url });
         }
     }, {
         key: 'updateSite',
@@ -319,6 +482,11 @@ var news_block = function (_Component) {
             this.props.setAttributes({ max_excerpt_length: max_excerpt_length });
         }
     }, {
+        key: 'update_source_mode',
+        value: function update_source_mode(source_mode) {
+            this.props.setAttributes({ source_mode: source_mode });
+        }
+    }, {
         key: 'update_taxonomy_term_mode',
         value: function update_taxonomy_term_mode(taxonomy_term_mode) {
             this.props.setAttributes({ taxonomy_term_mode: taxonomy_term_mode });
@@ -347,90 +515,56 @@ var news_block = function (_Component) {
     }, {
         key: 'render',
         value: function render() {
-            var options_site_list = [{ value: 0, label: __('Select a site'), disabled: true }];
-            if (this.state.sites.length > 0) {
-                this.state.sites.forEach(function (site) {
-                    options_site_list.push({ value: site.value, label: site.label });
-                });
-            }
 
-            var options_post_type_list = [{ value: '', label: __('Select a Post Type'), disabled: true }]; // value must be empty string; if null, the value ends up being the label.
-            if (this.state.post_types.length > 0) {
-                console.log(this.state.post_types);
-                this.state.post_types.forEach(function (post_type) {
-                    options_post_type_list.push({ value: post_type.value, label: post_type.label });
-                });
-            }
-
-            var options_taxonomy_list = [{ value: '', label: __('Select a taxonomy'), disabled: true }]; // value must be empty string; if null, the value ends up being the label.
-            if (this.state.taxonomies.length > 0) {
-                this.state.taxonomies.forEach(function (taxonomy) {
-                    options_taxonomy_list.push({ value: taxonomy.value, label: taxonomy.label });
-                });
-            }
-
-            var options_terms_list = []; // { value: null, label: (this.props.attributes.taxonomy_term_mode ? __('Select terms to exclude' ) : __('Select terms to include') ), disabled: true,  } ];
-            if (this.state.terms.length > 0) {
-                this.state.terms.forEach(function (term) {
-                    options_terms_list.push({ value: term.value, label: term.label });
-                });
-            }
             return [wp.element.createElement(
                 InspectorControls,
                 { key: 'inspector' },
+                wp.element.createElement(PanelBody, {
+                    title: 'News Block Sources',
+                    initialOpen: false
+                }),
+                wp.element.createElement(
+                    'div',
+                    null,
+                    'howdy'
+                ),
+                wp.element.createElement(News_block_component, {
+                    source_mode: this.props.attributes.source_mode,
+                    update_source_mode: this.update_source_mode,
+
+                    blog_id: this.props.attributes.blog_id,
+                    sites: this.state.sites,
+                    updateSite: this.updateSite,
+
+                    post_type: this.props.attributes.post_type,
+                    post_types: this.state.post_types,
+                    updatePostType: this.updatePostType,
+
+                    taxonomy: this.props.attributes.taxonomy,
+                    taxonomies: this.state.taxonomies,
+                    updateTaxonomy: this.updateTaxonomy,
+                    taxonomyTermMode: this.props.attributes.taxonomy_term_mode,
+                    update_taxonomy_term_mode: this.update_taxonomy_term_mode,
+
+                    selected_term_list: this.props.attributes.selected_term_list,
+                    terms: this.state.terms,
+                    updateSelectedTerms: this.updateSelectedTerms,
+
+                    rss_url: this.props.attributes.rss_url,
+                    updateRSSUrl: this.updateRSSUrl
+
+                }),
+                wp.element.createElement(
+                    'div',
+                    null,
+                    'end howdy'
+                ),
                 wp.element.createElement(
                     PanelBody,
                     {
                         title: 'News Block Controls',
                         initialOpen: true
                     },
-                    wp.element.createElement(
-                        PanelRow,
-                        null,
-                        wp.element.createElement(SelectControl, {
-                            value: this.props.attributes.blog_id,
-                            label: __('Select a site'),
-                            options: options_site_list,
-                            onChange: this.updateSite
-                        })
-                    ),
-                    this.props.attributes.blog_id ? wp.element.createElement(
-                        Fragment,
-                        null,
-                        wp.element.createElement(SelectControl, {
-                            value: this.props.attributes.post_type,
-                            label: __('Select a post type'),
-                            options: options_post_type_list,
-                            onChange: this.updatePostType
-                        }),
-                        this.props.attributes.post_type ? wp.element.createElement(
-                            Fragment,
-                            null,
-                            wp.element.createElement(SelectControl, {
-                                value: this.props.attributes.taxonomy,
-                                label: __('Select a taxonomy'),
-                                options: options_taxonomy_list,
-                                onChange: this.updateTaxonomy
-                            }),
-                            this.props.attributes.taxonomy ? wp.element.createElement(
-                                Fragment,
-                                null,
-                                wp.element.createElement(ToggleControl, {
-                                    label: this.props.attributes.taxonomy_term_mode ? 'Blacklist mode active' : 'Whitelist mode active',
-                                    checked: this.props.attributes.taxonomy_term_mode,
-                                    onChange: this.update_taxonomy_term_mode,
-                                    help: this.props.attributes.taxonomy_term_mode ? 'Exclude posts containing any of the specified terms' : 'Only include posts containing any of the specified terms'
-                                }),
-                                wp.element.createElement(SelectControl, {
-                                    value: this.props.attributes.selected_term_list,
-                                    label: this.props.attributes.taxonomy_term_mode ? __('Select terms to exclude') : __('Select terms to include'),
-                                    options: options_terms_list,
-                                    onChange: this.updateSelectedTerms,
-                                    multiple: true
-                                })
-                            ) : []
-                        ) : []
-                    ) : [],
                     wp.element.createElement(ToggleControl, {
                         label: this.props.attributes.date_restriction_mode ? 'Date filter (enabled)' : 'Date filter (disabled)',
                         checked: this.props.attributes.date_restriction_mode,
@@ -487,6 +621,45 @@ var news_block = function (_Component) {
 
     return news_block;
 }(Component);
+
+registerBlockType('schrauger/news-block', {
+    title: __('News Block', 'news-block-for-gutenberg'),
+    description: __('Lists the most recent posts from newest to oldest, with the ability to pull in and sort from multiple internal and external sources.', 'news-block-for-gutenberg'),
+    icon: 'format-aside',
+    category: 'embed',
+    attributes: {
+        // need ability for two or more sources. probably repeating field.
+        // one source option is local, and then you choose the blog (generally 1 ie main blog)
+        // another source is local and must be an rss feed. use url parameters to filter external news
+        source_mode: { type: 'boolean', default: false },
+        rss_url: { type: 'string', default: '' },
+        blog_id: { type: 'number', default: 1 },
+        post_type: { type: 'string', default: '' },
+        taxonomy: { type: 'string', default: '' },
+        taxonomy_term_mode: { type: 'boolean', default: false },
+        selected_term_list: { type: 'array', default: [] },
+        date_restriction_mode: { type: 'boolean', default: false },
+        earliest_date: { type: 'date', default: null },
+        latest_date: { type: 'date', default: null },
+        max_news_articles: { type: 'number', default: 6 },
+        max_excerpt_length: { type: 'number', default: 55 }
+    },
+
+    edit: news_block,
+
+    save: function save(_ref) {
+        var props = _ref.props,
+            className = _ref.className;
+
+        // this can simply return 'null', which tells wordpress to just save the input attributes.
+        // however, by actually saving the html, this saves the html in the database as well, which means
+        // that our plugin can be disabled and the old pages will still have iframe html. however, if an unprivileged
+        // user edits that page, the iframe code will be stripped out upon saving.
+        // due to the html filtering, this return is not strictly used, as the server-side render method overwrites
+        // this when printing onto the page (but that allows us to print out raw html without filtering, regardless of user).
+        return null;
+    }
+});
 
 /***/ })
 /******/ ]);

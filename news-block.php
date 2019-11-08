@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 0.10
+Version: 0.11
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -56,7 +56,14 @@ class news_block {
 				]
 
 			],
-
+			'source_mode'        => [
+				'type'    => 'boolean',
+				'default' => false
+			],
+			'rss_url'            => [
+				'type'    => 'string',
+				'default' => ''
+			],
 			'blog_id'            => [
 				'type'    => 'integer',
 				'default' => 1 //get_current_blog_id()
