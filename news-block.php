@@ -160,7 +160,7 @@ class news_block {
 	public static function render_news_callback( $attributes, $content ) {
 
 		$return_rendered_html = "";
-
+		$attributes['sources'] = $attributes['sources'];
 		// loop through all our sources and build an array with all the posts
 		$news_posts = [];
 		foreach ($attributes['sources'] as $source) {
@@ -168,7 +168,7 @@ class news_block {
 				// internal source
 				$internal_posts = self::internal_site_query( $attributes, $source );
 				if (count($internal_posts) > 0) {
-					array_push($news_posts, $internal_posts);
+					$news_posts = array_merge($news_posts, $internal_posts);
 				}
 			} else {
 				// external source
@@ -251,7 +251,6 @@ class news_block {
 
 		$switched_blog = false;
 		if ( get_current_blog_id() != $source[ 'blog_id' ] ) {
-			echo('switching');
 			switch_to_blog( $source[ 'blog_id' ] );
 			$switched_blog = true;
 		}
@@ -284,13 +283,23 @@ class news_block {
 			]);
 		}
 
+		// I have no idea why the filters are adding a 'AND 1=2' clause to the sql requests. I have to disable
+		// filters manually to prevent that from happening (when it happens, it returns 0 posts).
+		// It didn't use to do this, so something changed.
+		$query_args = array_merge($query_args, [
+			'suppress_filters' => true,
+		]);
+
 //echo(json_encode($query_args));
+
 		$the_query = new WP_Query( $query_args );
 //echo(json_encode($the_query));
+
+//		print_r($args);
+		//print_r($the_query);
 		new news_block_excerpt( $attributes[ 'max_excerpt_length' ] );
 
 		while ( $the_query->have_posts() ) {
-//echo 'we have a post';
 			$the_query->the_post();
 
 			$news_image_array = wp_get_attachment_image_src( get_post_thumbnail_id(), 'large' );
@@ -315,6 +324,7 @@ class news_block {
 		if ( $switched_blog ) {
 			restore_current_blog();
 		}
+//		print_r($return_news_posts);
 		return $return_news_posts;
 	}
 

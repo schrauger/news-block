@@ -297,7 +297,17 @@ var news_block = function (_Component4) {
                 sites: [{ value: 0, label: __('Loading sites...'), disabled: true }],
                 post_types: [{ value: '', label: __('Loading post types...'), disabled: true }],
                 taxonomies: [{ value: '', label: __('Loading taxonomies...'), disabled: true }],
-                terms: [{ value: '', label: __('Loading terms...'), disabled: true }]
+                terms: [{ value: '', label: __('Loading terms...'), disabled: true }],
+
+                enabled: true,
+                is_external: false,
+                rss_url: '',
+                blog_id: 1,
+                post_type: '',
+                taxonomy: '',
+                taxonomy_term_mode: false,
+                selected_term_list: []
+
             };
             _this5.setState(function (previousState) {
                 var state_sources = void 0;
@@ -326,7 +336,7 @@ var news_block = function (_Component4) {
             attributes_sources.push(new_source_attributes);
 
             // have to add a new entry in both the attributes (for server-side values) and the state (for temporary client-side values, like the list of sites)
-            _this5.props.setAttributes({ sources: JSON.stringify(attributes_sources) });
+            _this5.props.setAttributes({ sources: attributes_sources });
             _this5.insertIntoSourceArrayState();
         };
 
@@ -340,7 +350,7 @@ var news_block = function (_Component4) {
                 var remaining_sources = void 0;
                 remaining_sources = JSON.parse(JSON.stringify(_this5.state.sources));
                 remaining_sources.splice(index, 1);
-                _this5.props.setAttributes({ sources: JSON.stringify(remaining_sources) });
+                _this5.props.setAttributes({ sources: remaining_sources });
             };
         };
 
@@ -497,7 +507,7 @@ var news_block = function (_Component4) {
                 delete single_source['terms'];
                 return single_source;
             });
-            _this5.props.setAttributes({ sources: JSON.stringify(sources_without_lists) });
+            _this5.props.setAttributes({ sources: sources_without_lists });
         };
 
         _this5.updateSite = function (index, blog_id) {
@@ -695,7 +705,7 @@ var news_block = function (_Component4) {
                     this.props.attributes.sources.length > 0 ? React.createElement(
                         Fragment,
                         null,
-                        this.props.attributes.sources.map(function (source, key) {
+                        this.state.sources.map(function (source, key) {
                             return _this7.state.sources && _this7.state.sources[key] ? React.createElement(
                                 Fragment,
                                 { key: key },
@@ -743,7 +753,7 @@ var news_block = function (_Component4) {
                 this.props.attributes.sources.length > 0 ? React.createElement(
                     Fragment,
                     null,
-                    this.props.attributes.sources.map(function (source, key) {
+                    this.state.sources.map(function (source, key) {
                         //console.log(source);
                         return _this7.state.sources && _this7.state.sources[key] && _this7.state.sources[key].sites && source.enabled ? React.createElement(News_block_component, {
                             key: key,

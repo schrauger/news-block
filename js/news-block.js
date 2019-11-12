@@ -212,6 +212,16 @@ class news_block extends Component {
             post_types: [ {value: '', label: __('Loading post types...'), disabled: true,} ],
             taxonomies: [ {value: '', label: __('Loading taxonomies...'), disabled: true,} ],
             terms: [ {value: '', label: __('Loading terms...'), disabled: true,} ],
+
+            enabled: true,
+            is_external: false,
+            rss_url: '',
+            blog_id: 1,
+            post_type: '',
+            taxonomy: '',
+            taxonomy_term_mode: false,
+            selected_term_list: []
+
         };
         this.setState((previousState) => {
             let state_sources;
@@ -246,7 +256,7 @@ class news_block extends Component {
         attributes_sources.push(new_source_attributes);
 
         // have to add a new entry in both the attributes (for server-side values) and the state (for temporary client-side values, like the list of sites)
-        this.props.setAttributes({sources: JSON.stringify(attributes_sources)});
+        this.props.setAttributes({sources: (attributes_sources)});
         this.insertIntoSourceArrayState();
 
 
@@ -262,7 +272,7 @@ class news_block extends Component {
             let remaining_sources;
             remaining_sources = JSON.parse(JSON.stringify(this.state.sources));
             remaining_sources.splice(index, 1);
-            this.props.setAttributes({sources: JSON.stringify(remaining_sources)})
+            this.props.setAttributes({sources: (remaining_sources)})
         };
 
 
@@ -457,7 +467,7 @@ class news_block extends Component {
             delete single_source[ 'terms' ];
             return single_source;
         });
-        this.props.setAttributes({sources: JSON.stringify(sources_without_lists)});
+        this.props.setAttributes({sources: (sources_without_lists)});
     };
 
     /**
@@ -609,7 +619,7 @@ class news_block extends Component {
                     {(this.props.attributes.sources.length > 0)
                         ?
                         <Fragment >
-                            {this.props.attributes.sources.map((source, key) => {
+                            {this.state.sources.map((source, key) => {
                                 return (this.state.sources && this.state.sources[ key ])
                                     ?
                                     <Fragment key={key} >
@@ -651,7 +661,7 @@ class news_block extends Component {
                     ?
 
                     <Fragment >
-                        {this.props.attributes.sources.map((source, key) => {
+                        {this.state.sources.map((source, key) => {
                             //console.log(source);
                             return (this.state.sources && this.state.sources[ key ] && this.state.sources[ key ].sites && source.enabled)
                                 ?
