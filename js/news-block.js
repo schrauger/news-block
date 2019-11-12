@@ -4,6 +4,7 @@ const {InspectorControls} = wp.editor; //Block inspector wrapper
 const {
     TextControl,
     SelectControl,
+    Button,
     ServerSideRender,
     PanelBody,
     PanelRow,
@@ -14,6 +15,7 @@ const {__} = wp.i18n;
 const {apiFetch} = wp;
 
 class News_block_component_internal extends Component {
+
     render() {
         return (
             <Fragment >
@@ -45,7 +47,7 @@ class News_block_component_internal extends Component {
                                         <ToggleControl
                                             label={(this.props.taxonomy_term_mode ? 'Term filter (blacklist)' : 'Term filter (whitelist)')}
                                             checked={this.props.taxonomy_term_mode}
-                                            onChange={this.props.update_taxonomy_term_mode}
+                                            onChange={(value) => this.props.update_taxonomy_term_mode(value)}
                                             help={this.props.taxonomy_term_mode ? 'Exclude posts containing any of the specified terms' : 'Only include posts containing any of the specified terms'}
                                         />
                                         <SelectControl
@@ -88,6 +90,7 @@ class News_block_component_external extends Component {
 
 // note: React components must start with a Capital letter
 class News_block_component extends Component {
+
     render() {
         return (
             <PanelBody
@@ -95,12 +98,12 @@ class News_block_component extends Component {
                 initialOpen={true}
             >
                 <ToggleControl
-                    label={(this.props.source_mode ? 'Source (external)' : 'Source (internal)')}
-                    checked={this.props.source_mode}
-                    onChange={this.props.update_source_mode}
-                    help={this.props.source_mode ? 'Get posts from an RSS feed' : 'Get posts from WordPress'}
+                    label={(this.props.is_external ? 'Source (external)' : 'Source (internal)')}
+                    checked={this.props.is_external}
+                    onChange={this.props.update_is_external}
+                    help={this.props.is_external ? 'Get posts from an RSS feed' : 'Get posts from WordPress'}
                 />
-                {(!this.props.source_mode) ?
+                {(!this.props.is_external) ?
 
                     <News_block_component_internal
                         {...this.props}
@@ -125,10 +128,7 @@ class news_block extends Component {
     // for data we save in order to render, that gets set in the attributes.
     static getInitialState() {
         return {
-            sites: [ {value: 0, label: __('Loading sites...'), disabled: true,} ],
-            post_types: [ {value: '', label: __('Loading post types...'), disabled: true,} ],
-            taxonomies: [ {value: '', label: __('Loading taxonomies...'), disabled: true,} ],
-            terms: [ {value: '', label: __('Loading terms...'), disabled: true,} ],
+            sources: []
         };
     }
 
@@ -157,24 +157,125 @@ class news_block extends Component {
         // Need to bind 'this' to all of the methods (functions) of the news_block class. Listing them all individually started
         // to get long, so instead we request all the methods on the 'this' object, and then bind 'this' to them if they're
         // one of our 'get' or 'update' methods
-        this.constructor.getMethods(Object.getPrototypeOf(this), 'get').forEach((func_name) => {
-            this[ func_name ] = this[ func_name ].bind(this);
-        });
-        this.constructor.getMethods(Object.getPrototypeOf(this), 'update').forEach((func_name) => {
-            this[ func_name ] = this[ func_name ].bind(this);
-        });
-
 
     }
 
-    // Request data from endpoint
+
     componentDidMount() {
-        this.getSites();
+
+        // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
+        if (this.state.sources.length > 0) {
+            this.state.sources.map((single_source, index) => {
+                this.insertIntoSourceArrayState();
+                this.getSites(index);
+                this.getPostTypes(index);
+                this.getTaxonomies(index);
+                this.getTerms(index);
+            });
+        } else {
+            this.insertSource();
+        }
+
     }
 
-    getSites() {
-        this.setState({sites: [ {value: '', label: __('Loading sites...'), disabled: true,} ]});
-        return (apiFetch({path: 'schrauger/news-block/v1/get-sites/'}).then((sites) => {
+    /**
+     * Sets the react state for a specified array within the 'sources' array
+     * @param source_index
+     * @param which_array
+     * @param array_values
+     */
+    setSourceArrayState = (source_index, which_array, array_values) => {
+        this.setState((previousState) => {
+            const sources = previousState.sources.map((single_source, index) => {
+                if (source_index === index) {
+                    // this is the source we want to change from the array of sources
+                    single_source[ which_array ] = array_values;
+                    return single_source;
+
+                } else { // not our source, don't change it
+                    return single_source;
+                }
+            });
+            return {sources: sources};
+        })
+
+    };
+
+
+    /**
+     * Inserts a blank entry in the state for a single source. Use in combination with creating a new source, or when
+     * loading the page (creating a blank entry for each source, then loading the data afterwards).
+     */
+    insertIntoSourceArrayState = () => {
+        const new_source_state = {
+            sites: [ {value: 0, label: __('Loading sites...'), disabled: true,} ],
+            post_types: [ {value: '', label: __('Loading post types...'), disabled: true,} ],
+            taxonomies: [ {value: '', label: __('Loading taxonomies...'), disabled: true,} ],
+            terms: [ {value: '', label: __('Loading terms...'), disabled: true,} ],
+        };
+        this.setState((previousState) => {
+            let state_sources;
+            state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
+            state_sources.push(new_source_state);
+            return {sources: state_sources};
+        }, () => {
+            // after adding a blank source, get the network sites and populate the first dropdown for the new source
+            this.getSites(this.state.sources.length - 1);
+        });
+
+    };
+
+
+    /**
+     * When user clicks 'insert' button, this creates a new blank entry in the state and props.attributes for the dynamic and server data.
+     * It then runs ajax to get the sites for the initial list of the blank entry.
+     */
+    insertSource = () => {
+        const new_source_attributes = {
+            enabled: true,
+            is_external: false,
+            rss_url: '',
+            blog_id: 1,
+            post_type: '',
+            taxonomy: '',
+            taxonomy_term_mode: false,
+            selected_term_list: []
+        };
+        let attributes_sources;
+        attributes_sources = JSON.parse(JSON.stringify(this.state.sources));
+        attributes_sources.push(new_source_attributes);
+
+        // have to add a new entry in both the attributes (for server-side values) and the state (for temporary client-side values, like the list of sites)
+        this.props.setAttributes({sources: JSON.stringify(attributes_sources)});
+        this.insertIntoSourceArrayState();
+
+
+    };
+
+    deleteSource = (index) => {
+        this.setState((previousState) => {
+            let remaining_sources_state;
+            remaining_sources_state = previousState.sources.slice(0);
+            remaining_sources_state.splice(index, 1);
+            return {sources: remaining_sources_state}
+        }), () => {
+            let remaining_sources;
+            remaining_sources = JSON.parse(JSON.stringify(this.state.sources));
+            remaining_sources.splice(index, 1);
+            this.props.setAttributes({sources: JSON.stringify(remaining_sources)})
+        };
+
+
+    };
+
+    getSites = (index) => {
+        this.setSourceArrayState(
+            index,
+            'sites',
+            [ {value: '', label: __('Loading sites...'), disabled: true,} ]
+        );
+
+        let promise_result = (apiFetch({path: 'schrauger/news-block/v1/get-sites/'}).then((sites) => {
             // load sites into select list
             let options_site_list = [];
             if (sites.length > 0) {
@@ -186,23 +287,41 @@ class news_block extends Component {
                 options_site_list.push({value: 0, label: __('No valid sites'), disabled: true,});
             }
 
-            this.setState({sites: options_site_list});
+            this.setSourceArrayState(index, 'sites', options_site_list);
 
-            if (this.props.attributes.blog_id) {
-                this.getPostTypes(this.props.attributes.blog_id);
+            if (this.state.sources[ index ].blog_id) {
+                this.getPostTypes(index, this.state.sources[ index ].blog_id);
             }
         }));
-    }
 
-    getPostTypes(site) {
+        return promise_result;
+    };
+
+    getPostTypes = (index, site) => {
+
+        this.setSourceArrayState(
+            index,
+            'post_types',
+            [ {value: '', label: __('Loading post types...'), disabled: true,} ]
+        );
+        this.setSourceArrayState(
+            index,
+            'taxonomies',
+            []
+        );
+        this.setSourceArrayState(
+            index,
+            'terms',
+            []
+        );
+
         let path = 'schrauger/news-block/v1/';
         if (site) {
             path = path + 'site/' + site + '/';
         }
         path = path + 'get-post-types';
 
-        this.setState({post_types: [ {value: '', label: __('Loading post types...'), disabled: true,} ]});
-        return (apiFetch({path: path}).then((post_types) => {
+        let promise_result = (apiFetch({path: path}).then((post_types) => {
 
             // load post types into select list
             let options_post_type_list = [];
@@ -215,15 +334,29 @@ class news_block extends Component {
                 options_post_type_list.push({value: '', label: __('No valid post types'), disabled: true,});
             }
 
-            this.setState({post_types: options_post_type_list});
+            this.setSourceArrayState(index, 'post_types', options_post_type_list);
 
-            if (this.props.attributes.post_type) {
-                this.getTaxonomies(this.props.attributes.post_type, this.props.attributes.blog_id);
+            if (this.state.sources[ index ].post_type) {
+                this.getTaxonomies(index, this.state.sources[ index ].post_type, site);
             }
         }));
-    }
 
-    getTaxonomies(post_type, site) {
+        return promise_result;
+    };
+
+    getTaxonomies = (index, post_type, site) => {
+
+        this.setSourceArrayState(
+            index,
+            'taxonomies',
+            [ {value: '', label: __('Loading taxonomies...'), disabled: true,} ]
+        );
+        this.setSourceArrayState(
+            index,
+            'terms',
+            []
+        );
+
         let path = 'schrauger/news-block/v1/';
         if (site) {
             path = path + 'site/' + site + '/';
@@ -233,8 +366,7 @@ class news_block extends Component {
         }
         path = path + 'get-taxonomies';
 
-        this.setState({taxonomies: [ {value: '', label: __('Loading taxonomies...'), disabled: true,} ]});
-        return (apiFetch({path: path}).then((taxonomies) => {
+        let promise_result = (apiFetch({path: path}).then((taxonomies) => {
 
             // load taxonomies into select list
             let options_taxonomy_list = [];
@@ -248,15 +380,24 @@ class news_block extends Component {
                 options_taxonomy_list = [ {value: '', label: __('No valid taxonomies'), disabled: true,} ];
             }
 
-            this.setState({taxonomies: options_taxonomy_list});
+            this.setSourceArrayState(index, 'taxonomies', options_taxonomy_list);
 
-            if (this.props.attributes.taxonomy) {
-                this.getTerms(this.props.attributes.taxonomy, this.props.attributes.blog_id);
+
+            if (this.state.sources[ index ].taxonomy) {
+                this.getTerms(index, this.state.sources[ index ].taxonomy, site);
             }
         }));
-    }
 
-    getTerms(taxonomy, site) {
+        return promise_result;
+    };
+
+    getTerms = (index, taxonomy, site) => {
+        this.setSourceArrayState(
+            index,
+            'terms',
+            [ {value: '', label: __('Loading terms...'), disabled: true,} ]
+        );
+
         let path = 'schrauger/news-block/v1/';
         if (site) {
             path = path + 'site/' + site + '/';
@@ -266,8 +407,7 @@ class news_block extends Component {
         }
         path = path + 'get-terms';
 
-        this.setState({terms: [ {value: '', label: __('Loading terms...'), disabled: true,} ]});
-        return (apiFetch({path: path}).then((terms) => {
+        let promise_result = (apiFetch({path: path}).then((terms) => {
             // load terms into multi-select list
             let options_terms_list = [];// { value: null, label: (this.props.attributes.taxonomy_term_mode ? __('Select terms to exclude' ) : __('Select terms to include') ), disabled: true,  } ];
             if (terms.length > 0) {
@@ -277,85 +417,129 @@ class news_block extends Component {
             } else {
                 options_terms_list.push({value: '', label: __('No valid terms'), disabled: true,});
             }
+            this.setSourceArrayState(index, 'terms', options_terms_list);
 
-            this.setState({terms: options_terms_list});
         }));
-    }
 
-    updateRSSUrl(rss_url) {
+        return promise_result;
+    };
+
+    updateRSSUrl = (rss_url) => {
         this.props.setAttributes({rss_url});
-    }
+    };
 
-    updateSite(blog_id) {
-        this.props.setAttributes({
-            blog_id: parseInt(blog_id)
+    /**
+     * Updates an item within a specific source, stored in the attributes.
+     * Specify the index of your source, and the {name:value} of the variable to save
+     * @param index
+     * @param dictionary key: value of the Item you want to update
+     */
+    updateAttributeSourceItem = (index, dictionary) => {
+        const key = Object.keys(dictionary)[ 0 ];
+        const value = Object.values(dictionary)[ 0 ];
+        let sources;
+        sources = this.state.sources.map((single_source, single_index) => {
+            if (index === single_index) {
+                single_source[ key ] = value;
+            }
+            return single_source;
         });
-        this.getPostTypes(blog_id); // get new list of taxonomies after changing site
-
-    }
-
-    updatePostType(post_type) {
-        this.props.setAttributes({post_type});
-
-        // force reset of selected taxonomy, and get new list of taxonomies after changing post type
-        let blog_id = this.props.attributes.blog_id;
-        this.props.setAttributes({
-            taxonomy: ''
+        //console.log(sources);
+        //console.log(this.state);
+        this.setState({sources});
+        // don't push the dynamic lists to the server, as they get recomputed and don't need to be statically saved.
+        let sources_without_lists;
+        sources_without_lists = JSON.parse(JSON.stringify(sources)); // force a clone so we don't clobber state when setting server attributes
+        sources_without_lists.map((single_source, single_index) => {
+            delete single_source[ 'sites' ];
+            delete single_source[ 'post_types' ];
+            delete single_source[ 'taxonomies' ];
+            delete single_source[ 'terms' ];
+            return single_source;
         });
-        this.getTaxonomies(post_type, blog_id);
-    }
+        this.props.setAttributes({sources: JSON.stringify(sources_without_lists)});
+    };
 
-    updateTaxonomy(taxonomy) {
+    /**
+     * Update the site selection, and get post types for that site
+     * @param index
+     * @param blog_id
+     */
+    updateSite = (index, blog_id) => {
+        this.updateAttributeSourceItem(index, {blog_id});
+        this.getPostTypes(index, blog_id); // get new list of taxonomies after changing site
+
+    };
+
+    /**
+     * Update the post type selection, and get taxonomies for that post type
+     * @param index
+     * @param post_type
+     */
+    updatePostType = (index, post_type) => {
+        this.updateAttributeSourceItem(index, {post_type});
+
+        let blog_id = this.state.sources[ index ].blog_id;
+        this.getTaxonomies(index, post_type, blog_id);
+    };
+
+    updateTaxonomy = (index, taxonomy) => {
         //        this.setState( { taxonomy: taxonomy });
-        this.props.setAttributes({taxonomy});
+        this.updateAttributeSourceItem(index, {taxonomy});
+
 
         // force reset of selected terms, and get new list of terms after changing taxonomy
-        let blog_id = this.props.attributes.blog_id;
+        let blog_id = this.state.sources[ index ].blog_id;
         this.props.setAttributes({
             selected_term_list: []
         });
-        this.getTerms(taxonomy, blog_id);
-    }
+        this.getTerms(index, taxonomy, blog_id);
+    };
 
-    updateSelectedTerms(selected_term_list) {
-        this.props.setAttributes({selected_term_list});
-    }
+    updateSelectedTerms = (index, selected_term_list) => {
+        this.updateAttributeSourceItem(index, {selected_term_list});
+    };
 
-    updateLatestDate(latest_date) {
+    updateLatestDate = (latest_date) => {
         this.props.setAttributes({latest_date});
-    }
+    };
 
-    updateEarliestDate(earliest_date) {
+    updateEarliestDate = (earliest_date) => {
         this.props.setAttributes({earliest_date});
-    }
+    };
 
-    updateMaxNewsArticles(max_news_articles) {
+    updateMaxNewsArticles = (max_news_articles) => {
         max_news_articles = parseInt(max_news_articles);
         this.props.setAttributes({max_news_articles});
-    }
+    };
 
-    updateMaxExcerptLength(max_excerpt_length) {
+    updateMaxExcerptLength = (max_excerpt_length) => {
         max_excerpt_length = parseInt(max_excerpt_length);
         this.props.setAttributes({max_excerpt_length});
-    }
+    };
 
-    update_source_mode(source_mode) {
-        this.props.setAttributes({source_mode});
-    }
+    update_is_external = (index, is_external) => {
+        this.updateAttributeSourceItem(index, {is_external});
+    };
 
-    update_taxonomy_term_mode(taxonomy_term_mode) {
-        this.props.setAttributes({taxonomy_term_mode});
-    }
+    update_taxonomy_term_mode = (index, taxonomy_term_mode) => {
+        this.updateAttributeSourceItem(index, {taxonomy_term_mode});
+    };
 
-    update_date_restriction_mode(date_restriction_mode) {
+    update_enabled_mode = (index, enabled) => {
+        this.updateAttributeSourceItem(index, {enabled})
+    };
+
+    update_date_restriction_mode = (date_restriction_mode) => {
         this.props.setAttributes({date_restriction_mode});
-    }
+    };
+
 
     /**
      * Prevents users from clicking away from editor by clicking on a link in the server rendered post list.
      * @param event
      */
-    preventLink(event) {
+    static preventLink(event) {
         if (event.nativeEvent) {
             event.nativeEvent.preventDefault();
             event.nativeEvent.stopPropagation();
@@ -365,44 +549,9 @@ class news_block extends Component {
     }
 
     render() {
-
         return [
 
             <InspectorControls key='inspector' >
-                <PanelBody
-                    title={'News Block Sources'}
-                    initialOpen={false}
-                >
-                </PanelBody >
-                <News_block_component
-                    title={'Source #1 properties'}
-
-                    source_mode={this.props.attributes.source_mode}
-                    update_source_mode={this.update_source_mode}
-
-                    blog_id={this.props.attributes.blog_id}
-                    sites={this.state.sites}
-                    updateSite={this.updateSite}
-
-                    post_type={this.props.attributes.post_type}
-                    post_types={this.state.post_types}
-                    updatePostType={this.updatePostType}
-
-                    taxonomy={this.props.attributes.taxonomy}
-                    taxonomies={this.state.taxonomies}
-                    updateTaxonomy={this.updateTaxonomy}
-                    taxonomyTermMode={this.props.attributes.taxonomy_term_mode}
-                    update_taxonomy_term_mode={this.update_taxonomy_term_mode}
-
-                    selected_term_list={this.props.attributes.selected_term_list}
-                    terms={this.state.terms}
-                    updateSelectedTerms={this.updateSelectedTerms}
-
-                    rss_url={this.props.attributes.rss_url}
-                    updateRSSUrl={this.updateRSSUrl}
-
-                />
-
                 <PanelBody
                     title={'News Block Controls'}
                     initialOpen={true}
@@ -453,12 +602,122 @@ class news_block extends Component {
                     />
 
                 </PanelBody >
+                <PanelBody
+                    title={'News Block Sources'}
+                    initialOpen={true}
+                >
+                    {(this.props.attributes.sources.length > 0)
+                        ?
+                        <Fragment >
+                            {this.props.attributes.sources.map((source, key) => {
+                                return (this.state.sources && this.state.sources[ key ])
+                                    ?
+                                    <Fragment key={key} >
+                                        <PanelRow key={key} >
+                                            <ToggleControl
+                                                label={(source.enabled ? 'Source ' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled')}
+                                                checked={source.enabled}
+                                                onChange={(value) => {
+                                                    this.update_enabled_mode(key, value)
+                                                }}
+                                            />
+                                        </PanelRow >
+                                        {(source.enabled)
+                                            ?
+                                            []
+                                            :
+                                            <PanelRow >
+                                                <a href={'#'} onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    this.deleteSource(key)
+                                                }} >{'Delete Source ' + (key + 1)}</a >
+                                            </PanelRow >
+                                        }
+                                    </Fragment >
+                                    :
+                                    []
+
+                            })}
+                        </Fragment >
+                        :
+                        <PanelRow >Add sources</PanelRow >
+                    }
+                    <PanelRow >
+                        <button onClick={this.insertSource} >Add new</button >
+                    </PanelRow >
+                </PanelBody >
+                {(this.props.attributes.sources.length > 0)
+                    ?
+
+                    <Fragment >
+                        {this.props.attributes.sources.map((source, key) => {
+                            //console.log(source);
+                            return (this.state.sources && this.state.sources[ key ] && this.state.sources[ key ].sites && source.enabled)
+                                ?
+                                <News_block_component
+                                    key={key}
+                                    map_key={key} // react doesn't let child components see the special 'key' property, so we pass it a second time to a different prop they can use
+
+                                    title={'Source #' + (key + 1) + ' properties'}
+
+                                    is_external={source.is_external}
+                                    update_is_external={(value) => {
+                                        this.update_is_external(key, value)
+                                    }}
+
+                                    blog_id={source.blog_id}
+                                    sites={this.state.sources[ key ].sites}
+                                    updateSite={(value) => {
+                                        this.updateSite(key, value)
+                                    }}
+
+                                    post_type={source.post_type}
+                                    post_types={this.state.sources[ key ].post_types}
+                                    updatePostType={(value) => {
+                                        this.updatePostType(key, value)
+                                    }}
+
+                                    taxonomy={source.taxonomy}
+                                    taxonomies={this.state.sources[ key ].taxonomies}
+                                    updateTaxonomy={(value) => {
+                                        this.updateTaxonomy(key, value)
+                                    }}
+
+                                    taxonomy_term_mode={source.taxonomy_term_mode}
+                                    update_taxonomy_term_mode={(value) => {
+                                        this.update_taxonomy_term_mode(key, value)
+                                    }}
+
+                                    selected_term_list={source.selected_term_list}
+                                    terms={this.state.sources[ key ].terms}
+                                    updateSelectedTerms={(value) => {
+                                        this.updateSelectedTerms(key, value)
+                                    }}
+
+                                    //                                rss_url={source.props.attributes.rss_url}
+                                    //                                updateRSSUrl={(value) => {
+                                    //                                    this.updateRSSUrl(value, key)
+                                    //                                }}
+
+                                />
+                                :
+                                <div >No active sources</div >
+
+
+                        })}
+                    </Fragment >
+                    :
+                    []
+                }
+
+
             </InspectorControls >
 
             ,
             <div
-                class="overlaypage"
-                onClickCapture={this.preventLink} >
+                className="overlaypage"
+                onClickCapture={this.constructor.preventLink} >
                 <ServerSideRender
                     block='schrauger/news-block'
                     attributes={this.props.attributes}
@@ -483,13 +742,21 @@ registerBlockType(
             // need ability for two or more sources. probably repeating field.
             // one source option is local, and then you choose the blog (generally 1 ie main blog)
             // another source is local and must be an rss feed. use url parameters to filter external news
-            source_mode: {type: 'boolean', default: false},
-            rss_url: {type: 'string', default: ''},
-            blog_id: {type: 'number', default: 1},
-            post_type: {type: 'string', default: ''},
-            taxonomy: {type: 'string', default: ''},
-            taxonomy_term_mode: {type: 'boolean', default: false},
-            selected_term_list: {type: 'array', default: []},
+            sources: {
+                type: 'array',
+                default: [
+                    {
+                        enabled: true,
+                        is_external: false,
+                        rss_url: '',
+                        blog_id: 1,
+                        post_type: '',
+                        taxonomy: '',
+                        taxonomy_term_mode: false,
+                        selected_term_list: []
+                    }
+                ],
+            },
             date_restriction_mode: {type: 'boolean', default: false},
             earliest_date: {type: 'date', default: null},
             latest_date: {type: 'date', default: null},
@@ -500,6 +767,7 @@ registerBlockType(
         edit: news_block,
 
         save({props, className}) {
+
             // this can simply return 'null', which tells wordpress to just save the input attributes.
             // however, by actually saving the html, this saves the html in the database as well, which means
             // that our plugin can be disabled and the old pages will still have iframe html. however, if an unprivileged

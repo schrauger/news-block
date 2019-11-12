@@ -22,13 +22,22 @@ class news_block {
 	 *
 	 * @return array
 	 */
-	public static function block_atts( $attributes = [] ) {
+	public static function block_atts( ) {
 
-		$defaults = [
+		return [
 			'sources' =>     [
 				'type' => 'array',
-				'default' => [],
+				'default' => '',
 				'query' => [
+					'enabled' => [
+						'type' => 'boolean',
+						'default' => true
+					],
+					'is_external' => [
+						'type' => 'boolean',
+						'default' => false
+						// when false, use internal query. when true, use external rss
+					],
 					'blog_id'            => [
 						'type'    => 'integer',
 						'default' => 1 //get_current_blog_id()
@@ -53,40 +62,12 @@ class news_block {
 							'type' => 'string'
 						]
 					],
+					'rss_url' => [
+						'type' => 'string',
+						'default' => ''
+					]
 				]
 
-			],
-			'source_mode'        => [
-				'type'    => 'boolean',
-				'default' => false
-			],
-			'rss_url'            => [
-				'type'    => 'string',
-				'default' => ''
-			],
-			'blog_id'            => [
-				'type'    => 'integer',
-				'default' => 1 //get_current_blog_id()
-			],
-			'post_type'          => [
-				'type'    => 'string',
-				'default' => 'news'
-			],
-			'taxonomy'           => [
-				'type'    => 'string',
-				'default' => ''
-			],
-			'taxonomy_term_mode' => [
-				'type'    => 'boolean',
-				'default' => false
-				// when false, use blacklist (any taxonomies listed will NOT show up). when true, use whitelist (only taxonomies listed will show up)
-			],
-			'selected_term_list' => [
-				'type'    => 'array',
-				'default' => [],
-				'items'   => [
-					'type' => 'string'
-				]
 			],
 			'date_restriction_mode' => [
 				'type'    => 'boolean',
@@ -108,13 +89,10 @@ class news_block {
 			'max_excerpt_length' => [
 				'type'    => 'integer',
 				'default' => 20
-			],
-			'site'               => [
-				'type' => 'integer',
 			]
 		];
 
-		return shortcode_atts( $defaults, $attributes );
+		//return shortcode_atts( $defaults, $attributes );
 	}
 
 	/**
@@ -180,13 +158,31 @@ class news_block {
 	 * @return string // like shortcode callbacks, this is the html that we render in place of the block.
 	 */
 	public static function render_news_callback( $attributes, $content ) {
-		$attributes           = self::block_atts( $attributes );
+
 		$return_rendered_html = "";
 
-		$news_posts = self::internal_site_query( $attributes );
+		// loop through all our sources and build an array with all the posts
+		$news_posts = [];
+		foreach ($attributes['sources'] as $source) {
+			if ($source['is_external'] == 'false'){ //
+				// internal source
+				$internal_posts = self::internal_site_query( $attributes, $source );
+				if (count($internal_posts) > 0) {
+					array_push($news_posts, $internal_posts);
+				}
+			} else {
+				// external source
+			}
+		}
 
+		// sort all the posts by date
+		usort($news_posts, function($a,$b){
+			return strtotime($a['datesort']) < strtotime($b['datesort']);
+		});
+
+		// trim down our array based on the max number we want to display
 		$news_posts = array_slice( $news_posts, 0, $attributes[ 'max_news_articles' ] );
-
+		// finally, print out all the posts
 		if ( sizeof( $news_posts ) > 0 ) {
 			foreach ( $news_posts as $post ) {
 
@@ -243,31 +239,34 @@ class news_block {
 	/**
 	 * Runs a query on the internal site, based on the taxonomy terms specified
 	 *
-	 * @param $attributes
+	 * @param $attributes attributes shared by all sources, such as max_articles, excerpt_length, and date restrictions
+	 * @param $source specifics about the internal source, such as the blog_id, selected_terms, post_type, and others
 	 *
 	 * @return WP_Query
 	 */
-	public static function internal_site_query( $attributes ) {
+	public static function internal_site_query( $attributes, $source ) {
+//		var_dump($attributes);
 		//$attributes        = self::shortcode_atts( $attributes );
 		$return_news_posts = [];
 
 		$switched_blog = false;
-		if ( get_current_blog_id() != $attributes[ 'blog_id' ] ) {
-			switch_to_blog( $attributes[ 'blog_id' ] );
+		if ( get_current_blog_id() != $source[ 'blog_id' ] ) {
+			echo('switching');
+			switch_to_blog( $source[ 'blog_id' ] );
 			$switched_blog = true;
 		}
-		$tax_query = self::tax_query( $attributes );
+		$tax_query = self::tax_query( $source );
 
 		$query_args = [];
 		$query_args = array_merge($query_args, [
-			'post_type'      => $attributes[ 'post_type' ],
+			'post_type'      => $source[ 'post_type' ],
 			'posts_per_page' => $attributes[ 'max_news_articles' ],
 		]);
 
 		// restrict to selected terms from taxonomy
 		if ( sizeof( $tax_query ) > 0 ) {
 			$query_args = array_merge($query_args, [
-				'tax_query'      => [ self::tax_query( $attributes ) ], // must be inside an array
+				'tax_query'      => [ $tax_query ], // must be inside an array
 			]);
 		}
 
@@ -285,13 +284,13 @@ class news_block {
 			]);
 		}
 
-
+//echo(json_encode($query_args));
 		$the_query = new WP_Query( $query_args );
-
+//echo(json_encode($the_query));
 		new news_block_excerpt( $attributes[ 'max_excerpt_length' ] );
 
 		while ( $the_query->have_posts() ) {
-
+//echo 'we have a post';
 			$the_query->the_post();
 
 			$news_image_array = wp_get_attachment_image_src( get_post_thumbnail_id(), 'large' );
@@ -316,7 +315,6 @@ class news_block {
 		if ( $switched_blog ) {
 			restore_current_blog();
 		}
-
 		return $return_news_posts;
 	}
 
@@ -335,11 +333,11 @@ class news_block {
 	 *
 	 * @return array
 	 */
-	public static function tax_query( $attributes ) {
+	public static function tax_query( $source ) {
 		//$attributes = self::shortcode_atts( $attributes );
 
 		$return_array = [];
-		if ( $attributes[ 'taxonomy_term_mode' ] === false ) {
+		if ( $source[ 'taxonomy_term_mode' ] === 'false' ) {
 			// whitelist mode.
 			$relation = "OR";
 			$operator = "IN";
@@ -350,16 +348,16 @@ class news_block {
 		}
 
 		// apply AND or OR if specifying more than one slug
-		if ( sizeof( $attributes[ 'selected_term_list' ] ) > 1 ) {
+		if ( sizeof( $source[ 'selected_term_list' ] ) > 1 ) {
 			$return_array[ 'relation' ] = $relation;
 		}
 
 		// looping through each term and adding an explicit tax query for each one.
 		// we might be able to simply apply all terms to the 'terms' operator as it accepts an array,
 		// but I'm not sure what the behaviour is with IN vs NOT IN. we need (OR with IN) and (AND with NOT IN).
-		foreach ( $attributes[ 'selected_term_list' ] as $slug ) {
+		foreach ( $source[ 'selected_term_list' ] as $slug ) {
 			array_push( $return_array, [
-				'taxonomy' => $attributes[ 'taxonomy' ],
+				'taxonomy' => $source[ 'taxonomy' ],
 				'field'    => 'slug',
 				'terms'    => $slug,
 				'operator' => $operator
