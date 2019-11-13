@@ -15,6 +15,40 @@ require_once( 'news-block-endpoint.php' );
 
 
 class news_block {
+
+	/**
+	 * register the react script for a block, and also define
+	 * the server side render callback to allow for raw html.
+	 */
+	public static function load_news_block() {
+
+		wp_enqueue_style(
+			'news-block-plugin-style',
+			plugins_url('css/news-block.css', __FILE__), // this will load the current theme's style.css file, not necessarily the parent theme style.
+			false,
+			filemtime( plugin_dir_path(__FILE__).'css/news-block.css'),
+			false
+		);
+
+		wp_register_script(
+			'news-block-js',
+			plugins_url( 'js/news-block.build.js', __FILE__ ),
+			[ 'wp-blocks', 'wp-editor', 'wp-data', 'wp-element', 'wp-i18n', 'wp-components' ],
+			filemtime( plugin_dir_path( __FILE__ ) . 'js/news-block.build.js' )
+		);
+
+		register_block_type(
+			'schrauger/news-block',
+			[
+				'editor_script'   => 'news-block-js',
+				'render_callback' => [ 'news_block', 'render_news_callback' ],
+				// attributes must be defined here as well as on the client-side js file
+				'attributes'      => self::block_atts(),
+				//'attributes'      => [ 'blog_id' => ['type' => 'integer', 'default' => 1], 'taxonomy' => ['type' => 'string'], 'taxonomy_term_mode'=> ['type' => 'string'], 'latest_date'=> ['type' => 'string'],'max_news_articles'=> ['type' => 'string'],'max_excerpt_length'=> ['type' => 'string'] ]// self::shortcode_atts()
+			]
+		);
+	}
+
 	/**
 	 * Apply defaults to specified attributes if attribute is not defined by the user.
 	 *
@@ -93,32 +127,6 @@ class news_block {
 		];
 
 		//return shortcode_atts( $defaults, $attributes );
-	}
-
-	/**
-	 * register the react script for a block, and also define
-	 * the server side render callback to allow for raw html.
-	 */
-	public static function load_news_block() {
-
-
-		wp_register_script(
-			'news-block-js',
-			plugins_url( 'js/news-block.build.js', __FILE__ ),
-			[ 'wp-blocks', 'wp-editor', 'wp-data', 'wp-element', 'wp-i18n', 'wp-components' ],
-			filemtime( plugin_dir_path( __FILE__ ) . 'js/news-block.build.js' )
-		);
-
-		register_block_type(
-			'schrauger/news-block',
-			[
-				'editor_script'   => 'news-block-js',
-				'render_callback' => [ 'news_block', 'render_news_callback' ],
-				// attributes must be defined here as well as on the client-side js file
-				'attributes'      => self::block_atts(),
-				//'attributes'      => [ 'blog_id' => ['type' => 'integer', 'default' => 1], 'taxonomy' => ['type' => 'string'], 'taxonomy_term_mode'=> ['type' => 'string'], 'latest_date'=> ['type' => 'string'],'max_news_articles'=> ['type' => 'string'],'max_excerpt_length'=> ['type' => 'string'] ]// self::shortcode_atts()
-			]
-		);
 	}
 
 	/** Prepends the $content with the current post thumbnail if exists - <p>{thumbnail}</p>$content
