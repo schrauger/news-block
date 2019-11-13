@@ -178,7 +178,7 @@ class news_block extends Component {
 
 
     componentDidMount() {
-
+console.log(this.props.attributes.sources);
         // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
         if (this.props.attributes.sources.length > 0) {
             this.props.attributes.sources.map((single_source, index) => {
@@ -196,7 +196,7 @@ class news_block extends Component {
 
     static attributesMerge(defaults, options) {
         for (const [ key, value ] of Object.entries(defaults)) {
-            if (options[ key ]) {
+            if ((options[ key ] !== undefined) && (options[key] !== null)) {
                 defaults[ key ] = options[ key ] // if array passed in has a value set for one of our defaults, copy the value over. otherwise, ignore that extra key-value pair.
             }
         }
@@ -213,8 +213,7 @@ class news_block extends Component {
             post_types: [ {value: '', label: __('Loading post types...'), disabled: true,} ],
             taxonomies: [ {value: '', label: __('Loading taxonomies...'), disabled: true,} ],
             terms: [ {value: '', label: __('Loading terms...'), disabled: true,} ],
-
-            enabled: true,
+            source_enabled: true,
             is_external: false,
             rss_url: '',
             blog_id: 1,
@@ -224,8 +223,9 @@ class news_block extends Component {
             selected_term_list: []
 
         };
+console.log(single_source);
         new_source_state = this.constructor.attributesMerge(new_source_state, single_source);
-
+console.log(new_source_state);
         this.setState((previousState) => {
             let state_sources;
             state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
@@ -245,7 +245,7 @@ class news_block extends Component {
      */
     insertSource = () => {
         const new_source_attributes = {
-            enabled: true,
+            source_enabled: true,
             is_external: false,
             rss_url: '',
             blog_id: 1,
@@ -278,12 +278,12 @@ class news_block extends Component {
             remaining_sources_state = previousState.sources.slice(0);
             remaining_sources_state.splice(index, 1);
             return {sources: remaining_sources_state}
-        }), () => {
+        }, () => {
             let remaining_sources;
             remaining_sources = JSON.parse(JSON.stringify(this.state.sources));
             remaining_sources.splice(index, 1);
             this.props.setAttributes({sources: (remaining_sources)})
-        };
+        });
 
 
     };
@@ -589,8 +589,8 @@ class news_block extends Component {
         this.updateAttributeSourceItem(index, {taxonomy_term_mode});
     };
 
-    update_enabled_mode = (index, enabled) => {
-        this.updateAttributeSourceItem(index, {enabled})
+    update_enabled_mode = (index, source_enabled) => {
+        this.updateAttributeSourceItem(index, {source_enabled})
     };
 
     update_date_restriction_mode = (date_restriction_mode) => {
@@ -678,14 +678,14 @@ class news_block extends Component {
                                     <Fragment key={key} >
                                         <PanelRow key={key} >
                                             <ToggleControl
-                                                label={(source.enabled ? 'Source ' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled')}
-                                                checked={source.enabled}
+                                                label={(source.source_enabled ? 'Source ' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled')}
+                                                checked={source.source_enabled}
                                                 onChange={(value) => {
                                                     this.update_enabled_mode(key, value)
                                                 }}
                                             />
                                         </PanelRow >
-                                        {(source.enabled)
+                                        {(source.source_enabled)
                                             ?
                                             []
                                             :
@@ -715,7 +715,7 @@ class news_block extends Component {
 
                     <Fragment >
                         {this.state.sources.map((source, key) => {
-                            return (this.state.sources && this.state.sources[ key ] && this.state.sources[ key ].sites && source.enabled)
+                            return (this.state.sources && this.state.sources[ key ] && this.state.sources[ key ].sites && source.source_enabled)
                                 ?
                                 <News_block_component
                                     key={key}
@@ -759,7 +759,7 @@ class news_block extends Component {
 
                                     rss_url={source.rss_url}
                                     updateRSSUrl={(value) => {
-                                        this.updateRSSUrl(value, key)
+                                        this.updateRSSUrl(key, value)
                                     }}
 
                                 />
@@ -808,7 +808,7 @@ registerBlockType(
                 type: 'array',
                 default: [
                     {
-                        enabled: true,
+                        source_enabled: true,
                         is_external: false,
                         rss_url: '',
                         blog_id: 1,

@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 0.11.1
+Version: 1.0
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -12,6 +12,7 @@ License: GPL2
 //locate_template( 'simple_html_dom.php', true, true );
 require_once( 'news-block-excerpt.php' );
 require_once( 'news-block-endpoint.php' );
+require_once( 'simple_html_dom.php');
 
 
 class news_block {
@@ -63,7 +64,7 @@ class news_block {
 				'type'    => 'array',
 				'default' => '',
 				'query'   => [
-					'enabled'            => [
+					'source_enabled'            => [
 						'type'    => 'boolean',
 						'default' => true
 					],
@@ -172,7 +173,7 @@ class news_block {
 		$news_posts = [];
 		foreach ( $attributes[ 'sources' ] as $source ) {
 			//print_r( $source );
-			if ( ( $source[ 'enabled' ] === true ) || ( $source[ 'enabled' ] === 'true' ) ) {
+			if ( ( $source[ 'source_enabled' ] === true ) || ( $source[ 'source_enabled' ] === 'true' ) ) {
 				if ( ( $source[ 'is_external' ] === false ) || ( $source[ 'is_external' ] === 'false' ) ) { //
 					// internal source
 					$internal_posts = self::internal_site_query( $attributes, $source );
@@ -181,6 +182,10 @@ class news_block {
 					}
 				} else {
 					// external source
+					$external_posts = self::external_site_query($attributes, $source);
+					if ( count( $external_posts ) > 0 ) {
+						$news_posts = array_merge( $news_posts, $external_posts );
+					}
 				}
 			} else {
 				//disabled source. do nothing.
@@ -334,12 +339,109 @@ class news_block {
 		return $return_news_posts;
 	}
 
-	public static function external_site_query( $attributes ) {
-		$attributes = self::block_atts( $attributes );
+	/**
+	 * Returns a transient lifetime of 10 minutes
+	 * @return int
+	 */
+	public static function external_site_transient_lifetime() {
+		return 600;
+	}
+
+	/**
+	 * Disables the filter that prevents unsafe urls from loading.
+	 * @param $args
+	 *
+	 * @return mixed
+	 */
+	public static function disable_safety_filter($args){
+		$args['reject_unsafe_urls'] = false;
+		return $args;
+	}
+
+	/**
+	 * Gets the feed from a url. If that url resolves to an internally routable ip address in a specified list of domains, it disables 'reject_unsafe_urls' to allow the request to continue.
+	 * @param $url
+	 * @return mixed
+	 */
+	public static function external_site_query_feed($url){
+		$url_array = parse_url($url);
+		$host = $url_array['host'];
+
+		//@TODO hardcoded value; perhaps make this into an admin-accessible option
+		$allowed_unsafe_domains = [
+			'ucfhealth.com',
+			'med.ucf.edu'
+		];
+
+		$safety_disabled = false;
+		if (array_search($host, $allowed_unsafe_domains) !== false){
+			$safety_disabled = true;
+			add_filter( 'http_request_args', array(__CLASS__,'disable_safety_filter') );
+		}
+
+		add_filter( 'wp_feed_cache_transient_lifetime', array(__CLASS__, 'external_site_transient_lifetime') ); // refresh every 10 minutes
+		$feed = fetch_feed( $url );
+		remove_filter( 'wp_feed_cache_transient_lifetime',array(__CLASS__, 'external_site_transient_lifetime') );
+
+		// restore filter after making our request
+		if ($safety_disabled){
+			remove_filter('http_request_args', array(__CLASS__,'disable_safety_filter') );
+		}
+
+		return $feed;
+	}
+
+
+	public static function external_site_query( $attributes, $source ) {
 		$news_posts = [];
-		add_filter( 'wp_feed_cache_transient_lifetime', create_function( '$a', 'return 600;' ) ); // refresh every 10 minutes
-		$feed = fetch_feed( "https://ucfhealth.com/feed/?post_type=news&news_category=crosspost-to-com" );
-		remove_filter( 'wp_feed_cache_transient_lifetime', create_function( '$a', 'return 600;' ) );
+		$feed = self::external_site_query_feed($source['rss_url']);
+		if ( ! is_wp_error( $feed)) {
+			$max_items   = $feed->get_item_quantity( $attributes[ 'max_news_articles' ] );
+			$feed_items = $feed->get_items( 0, $max_items );
+
+			foreach ( $feed_items as $item ) {
+				/* @var SimplePie_Item $item */
+
+				/* get thumbnail */
+				$htmlDOM = new simple_html_dom();
+				$htmlDOM->load( $item->get_content() );
+				$image     = $htmlDOM->find( 'img', 0 );
+				$image_url = $image->src;
+
+				// remove images for description
+				$image->outertext = '';
+				$htmlDOM->save();
+
+				$content_minus_image = wp_trim_words( $htmlDOM, new_excerpt_length(), new_excerpt_more() ); // these functions are defined in functions.php
+
+				if ( ! isset( $image_url ) ) // if exists
+				{
+					$image_url = '/wp-content/themes/ucf-health-theme/images/logos/ucf-building.jpg'; // default stock image if image not set
+				}
+
+				$UTC = new DateTimeZone("UTC");
+				$timezoneEST = new DateTimeZone("America/New_York");
+				$datesort = new DateTime($item->get_date('Y-m-d H:i:s' ), $UTC);
+				$datesort->setTimezone($timezoneEST);
+				$date = new DateTime($item->get_date(), $UTC);
+				$date->setTimezone($timezoneEST);
+
+				array_push( $news_posts, array(
+					'image'     => $image_url,
+					'permalink' => $item->get_link(),
+					'title'     => $item->get_title(),
+					'piece'     => $content_minus_image,
+					'datesort'  => $datesort->format('Y-m-d H:i:s T'),
+					'date'      => $date->format('F d, Y'),
+					'class'     => 'class="news-preview-image"',
+					'target'    => 'target="_blank"'
+				) );
+			}
+		}
+		add_filter( 'the_excerpt_rss', array(__CLASS__, 'wcs_post_thumbnails_in_feeds' ));
+		add_filter( 'the_content_feed', array(__CLASS__, 'wcs_post_thumbnails_in_feeds' ));
+
+		return $news_posts;
 	}
 
 	/**

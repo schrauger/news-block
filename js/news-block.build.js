@@ -307,8 +307,7 @@ var news_block = function (_Component4) {
                 post_types: [{ value: '', label: __('Loading post types...'), disabled: true }],
                 taxonomies: [{ value: '', label: __('Loading taxonomies...'), disabled: true }],
                 terms: [{ value: '', label: __('Loading terms...'), disabled: true }],
-
-                enabled: true,
+                source_enabled: true,
                 is_external: false,
                 rss_url: '',
                 blog_id: 1,
@@ -318,8 +317,9 @@ var news_block = function (_Component4) {
                 selected_term_list: []
 
             };
+            console.log(single_source);
             new_source_state = _this5.constructor.attributesMerge(new_source_state, single_source);
-
+            console.log(new_source_state);
             _this5.setState(function (previousState) {
                 var state_sources = void 0;
                 state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
@@ -333,7 +333,7 @@ var news_block = function (_Component4) {
 
         _this5.insertSource = function () {
             var new_source_attributes = {
-                enabled: true,
+                source_enabled: true,
                 is_external: false,
                 rss_url: '',
                 blog_id: 1,
@@ -364,12 +364,12 @@ var news_block = function (_Component4) {
                 remaining_sources_state = previousState.sources.slice(0);
                 remaining_sources_state.splice(index, 1);
                 return { sources: remaining_sources_state };
-            }), function () {
+            }, function () {
                 var remaining_sources = void 0;
                 remaining_sources = JSON.parse(JSON.stringify(_this5.state.sources));
                 remaining_sources.splice(index, 1);
                 _this5.props.setAttributes({ sources: remaining_sources });
-            };
+            });
         };
 
         _this5.getSites = function (index) {
@@ -597,8 +597,8 @@ var news_block = function (_Component4) {
             _this5.updateAttributeSourceItem(index, { taxonomy_term_mode: taxonomy_term_mode });
         };
 
-        _this5.update_enabled_mode = function (index, enabled) {
-            _this5.updateAttributeSourceItem(index, { enabled: enabled });
+        _this5.update_enabled_mode = function (index, source_enabled) {
+            _this5.updateAttributeSourceItem(index, { source_enabled: source_enabled });
         };
 
         _this5.update_date_restriction_mode = function (date_restriction_mode) {
@@ -619,6 +619,7 @@ var news_block = function (_Component4) {
         value: function componentDidMount() {
             var _this6 = this;
 
+            console.log(this.props.attributes.sources);
             // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
             if (this.props.attributes.sources.length > 0) {
                 this.props.attributes.sources.map(function (single_source, index) {
@@ -704,14 +705,14 @@ var news_block = function (_Component4) {
                                     PanelRow,
                                     { key: key },
                                     React.createElement(ToggleControl, {
-                                        label: source.enabled ? 'Source ' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled',
-                                        checked: source.enabled,
+                                        label: source.source_enabled ? 'Source ' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled',
+                                        checked: source.source_enabled,
                                         onChange: function onChange(value) {
                                             _this7.update_enabled_mode(key, value);
                                         }
                                     })
                                 ),
-                                source.enabled ? [] : React.createElement(
+                                source.source_enabled ? [] : React.createElement(
                                     PanelRow,
                                     null,
                                     React.createElement(
@@ -745,7 +746,7 @@ var news_block = function (_Component4) {
                     Fragment,
                     null,
                     this.state.sources.map(function (source, key) {
-                        return _this7.state.sources && _this7.state.sources[key] && _this7.state.sources[key].sites && source.enabled ? React.createElement(News_block_component, {
+                        return _this7.state.sources && _this7.state.sources[key] && _this7.state.sources[key].sites && source.source_enabled ? React.createElement(News_block_component, {
                             key: key,
                             map_key: key // react doesn't let child components see the special 'key' property, so we pass it a second time to a different prop they can use
 
@@ -787,7 +788,7 @@ var news_block = function (_Component4) {
 
                             rss_url: source.rss_url,
                             updateRSSUrl: function updateRSSUrl(value) {
-                                _this7.updateRSSUrl(value, key);
+                                _this7.updateRSSUrl(key, value);
                             }
 
                         }) : [];
@@ -824,7 +825,7 @@ var news_block = function (_Component4) {
                     var key = _ref3[0];
                     var value = _ref3[1];
 
-                    if (options[key]) {
+                    if (options[key] !== undefined && options[key] !== null) {
                         defaults[key] = options[key]; // if array passed in has a value set for one of our defaults, copy the value over. otherwise, ignore that extra key-value pair.
                     }
                 }
@@ -945,7 +946,7 @@ registerBlockType('schrauger/news-block', {
         sources: {
             type: 'array',
             default: [{
-                enabled: true,
+                source_enabled: true,
                 is_external: false,
                 rss_url: '',
                 blog_id: 1,
