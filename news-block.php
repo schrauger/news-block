@@ -22,19 +22,19 @@ class news_block {
 	 *
 	 * @return array
 	 */
-	public static function block_atts( ) {
+	public static function block_atts() {
 
 		return [
-			'sources' =>     [
-				'type' => 'array',
+			'sources'               => [
+				'type'    => 'array',
 				'default' => '',
-				'query' => [
-					'enabled' => [
-						'type' => 'boolean',
+				'query'   => [
+					'enabled'            => [
+						'type'    => 'boolean',
 						'default' => true
 					],
-					'is_external' => [
-						'type' => 'boolean',
+					'is_external'        => [
+						'type'    => 'boolean',
 						'default' => false
 						// when false, use internal query. when true, use external rss
 					],
@@ -62,8 +62,8 @@ class news_block {
 							'type' => 'string'
 						]
 					],
-					'rss_url' => [
-						'type' => 'string',
+					'rss_url'            => [
+						'type'    => 'string',
 						'default' => ''
 					]
 				]
@@ -74,19 +74,19 @@ class news_block {
 				'default' => false
 				// when false, use blacklist (any taxonomies listed will NOT show up). when true, use whitelist (only taxonomies listed will show up)
 			],
-			'earliest_date'        => [
+			'earliest_date'         => [
 				'type'    => 'date',
 				'default' => null
 			],
-			'latest_date'        => [
+			'latest_date'           => [
 				'type'    => 'date',
 				'default' => null
 			],
-			'max_news_articles'  => [
+			'max_news_articles'     => [
 				'type'    => 'integer',
 				'default' => 8
 			],
-			'max_excerpt_length' => [
+			'max_excerpt_length'    => [
 				'type'    => 'integer',
 				'default' => 20
 			]
@@ -158,27 +158,31 @@ class news_block {
 	 * @return string // like shortcode callbacks, this is the html that we render in place of the block.
 	 */
 	public static function render_news_callback( $attributes, $content ) {
-
-		$return_rendered_html = "";
-		$attributes['sources'] = $attributes['sources'];
+		$return_rendered_html    = "";
+		$attributes[ 'sources' ] = $attributes[ 'sources' ];
 		// loop through all our sources and build an array with all the posts
 		$news_posts = [];
-		foreach ($attributes['sources'] as $source) {
-			if ($source['is_external'] == 'false'){ //
-				// internal source
-				$internal_posts = self::internal_site_query( $attributes, $source );
-				if (count($internal_posts) > 0) {
-					$news_posts = array_merge($news_posts, $internal_posts);
+		foreach ( $attributes[ 'sources' ] as $source ) {
+			//print_r( $source );
+			if ( ( $source[ 'enabled' ] === true ) || ( $source[ 'enabled' ] === 'true' ) ) {
+				if ( ( $source[ 'is_external' ] === false ) || ( $source[ 'is_external' ] === 'false' ) ) { //
+					// internal source
+					$internal_posts = self::internal_site_query( $attributes, $source );
+					if ( count( $internal_posts ) > 0 ) {
+						$news_posts = array_merge( $news_posts, $internal_posts );
+					}
+				} else {
+					// external source
 				}
 			} else {
-				// external source
+				//disabled source. do nothing.
 			}
 		}
 
 		// sort all the posts by date
-		usort($news_posts, function($a,$b){
-			return strtotime($a['datesort']) < strtotime($b['datesort']);
-		});
+		usort( $news_posts, function ( $a, $b ) {
+			return strtotime( $a[ 'datesort' ] ) < strtotime( $b[ 'datesort' ] );
+		} );
 
 		// trim down our array based on the max number we want to display
 		$news_posts = array_slice( $news_posts, 0, $attributes[ 'max_news_articles' ] );
@@ -240,13 +244,12 @@ class news_block {
 	 * Runs a query on the internal site, based on the taxonomy terms specified
 	 *
 	 * @param $attributes attributes shared by all sources, such as max_articles, excerpt_length, and date restrictions
-	 * @param $source specifics about the internal source, such as the blog_id, selected_terms, post_type, and others
+	 * @param $source     specifics about the internal source, such as the blog_id, selected_terms, post_type, and
+	 *                    others
 	 *
 	 * @return WP_Query
 	 */
 	public static function internal_site_query( $attributes, $source ) {
-//		var_dump($attributes);
-		//$attributes        = self::shortcode_atts( $attributes );
 		$return_news_posts = [];
 
 		$switched_blog = false;
@@ -257,46 +260,41 @@ class news_block {
 		$tax_query = self::tax_query( $source );
 
 		$query_args = [];
-		$query_args = array_merge($query_args, [
+		$query_args = array_merge( $query_args, [
 			'post_type'      => $source[ 'post_type' ],
 			'posts_per_page' => $attributes[ 'max_news_articles' ],
-		]);
+		] );
 
 		// restrict to selected terms from taxonomy
 		if ( sizeof( $tax_query ) > 0 ) {
-			$query_args = array_merge($query_args, [
-				'tax_query'      => [ $tax_query ], // must be inside an array
-			]);
+			$query_args = array_merge( $query_args, [
+				'tax_query' => [ $tax_query ], // must be inside an array
+			] );
 		}
 
 
 		// restrict to articles posted within date range
-		if ($attributes['date_restriction_mode']){
-			$query_args = array_merge($query_args, [
+		if ( $attributes[ 'date_restriction_mode' ] ) {
+			$query_args = array_merge( $query_args, [
 				'date_query' => [
 					[
-						'before' => $attributes['latest_date'],
-						'after' => $attributes['earliest_date'],
+						'before'    => $attributes[ 'latest_date' ],
+						'after'     => $attributes[ 'earliest_date' ],
 						'inclusive' => true
 					]
 				]
-			]);
+			] );
 		}
 
-		// I have no idea why the filters are adding a 'AND 1=2' clause to the sql requests. I have to disable
-		// filters manually to prevent that from happening (when it happens, it returns 0 posts).
-		// It didn't use to do this, so something changed.
-		$query_args = array_merge($query_args, [
-			'suppress_filters' => true,
-		]);
-
-//echo(json_encode($query_args));
+		// For some reason, going directly to the endpoint in a browser tab results in no news posts. A filter
+		// is adding 'AND 1=2' to our query. To view the posts directly from json (ie when debugging), you need to suppress filters.
+		// Inside a normal page when using the block, it doesn't matter.
+		//		$query_args = array_merge($query_args, [
+		//			'suppress_filters' => false,
+		//		]);
 
 		$the_query = new WP_Query( $query_args );
-//echo(json_encode($the_query));
 
-//		print_r($args);
-		//print_r($the_query);
 		new news_block_excerpt( $attributes[ 'max_excerpt_length' ] );
 
 		while ( $the_query->have_posts() ) {
@@ -324,7 +322,7 @@ class news_block {
 		if ( $switched_blog ) {
 			restore_current_blog();
 		}
-//		print_r($return_news_posts);
+
 		return $return_news_posts;
 	}
 

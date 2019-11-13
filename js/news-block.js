@@ -9,6 +9,7 @@ const {
     PanelBody,
     PanelRow,
     ToggleControl,
+    URLInputButton
 } = wp.components; //Block inspector wrapper
 const {registerStore, withSelect,} = wp.data; // used to run json requests for wordpress data (blogs, taxonomies)
 const {__} = wp.i18n;
@@ -88,14 +89,29 @@ class News_block_component_external extends Component {
     }
 }
 
+
+
 // note: React components must start with a Capital letter
 class News_block_component extends Component {
 
+    autoOpen = () => {
+        if ((this.props.is_external == false) && (this.props.selected_term_list.length > 0)) {
+            // internal source that has already been configured. don't auto-open the properties
+            return false;
+        }
+        if ((this.props.is_external == true) && (this.props.rss_url.length > 0)) {
+            // external source that has already been configures. don't auto-open the properties
+            return false;
+        }
+        // new or unconfigured source. auto-open the properties.
+        return true;
+    }
     render() {
         return (
             <PanelBody
                 title={this.props.title}
-                initialOpen={true}
+                initialOpen={ this.autoOpen()}
+
             >
                 <ToggleControl
                     label={(this.props.is_external ? 'Source (external)' : 'Source (internal)')}
@@ -164,9 +180,9 @@ class news_block extends Component {
     componentDidMount() {
 
         // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
-        if (this.state.sources.length > 0) {
-            this.state.sources.map((single_source, index) => {
-                this.insertIntoSourceArrayState();
+        if (this.props.attributes.sources.length > 0) {
+            this.props.attributes.sources.map((single_source, index) => {
+                this.insertIntoSourceArrayState(single_source);
                 this.getSites(index);
                 this.getPostTypes(index);
                 this.getTaxonomies(index);
@@ -178,36 +194,21 @@ class news_block extends Component {
 
     }
 
-    /**
-     * Sets the react state for a specified array within the 'sources' array
-     * @param source_index
-     * @param which_array
-     * @param array_values
-     */
-    setSourceArrayState = (source_index, which_array, array_values) => {
-        this.setState((previousState) => {
-            const sources = previousState.sources.map((single_source, index) => {
-                if (source_index === index) {
-                    // this is the source we want to change from the array of sources
-                    single_source[ which_array ] = array_values;
-                    return single_source;
-
-                } else { // not our source, don't change it
-                    return single_source;
-                }
-            });
-            return {sources: sources};
-        })
-
-    };
-
+    static attributesMerge(defaults, options) {
+        for (const [ key, value ] of Object.entries(defaults)) {
+            if (options[ key ]) {
+                defaults[ key ] = options[ key ] // if array passed in has a value set for one of our defaults, copy the value over. otherwise, ignore that extra key-value pair.
+            }
+        }
+        return defaults;
+    }
 
     /**
      * Inserts a blank entry in the state for a single source. Use in combination with creating a new source, or when
      * loading the page (creating a blank entry for each source, then loading the data afterwards).
      */
-    insertIntoSourceArrayState = () => {
-        const new_source_state = {
+    insertIntoSourceArrayState = (single_source = []) => {
+        let new_source_state = {
             sites: [ {value: 0, label: __('Loading sites...'), disabled: true,} ],
             post_types: [ {value: '', label: __('Loading post types...'), disabled: true,} ],
             taxonomies: [ {value: '', label: __('Loading taxonomies...'), disabled: true,} ],
@@ -223,6 +224,8 @@ class news_block extends Component {
             selected_term_list: []
 
         };
+        new_source_state = this.constructor.attributesMerge(new_source_state, single_source);
+
         this.setState((previousState) => {
             let state_sources;
             state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
@@ -253,6 +256,13 @@ class news_block extends Component {
         };
         let attributes_sources;
         attributes_sources = JSON.parse(JSON.stringify(this.state.sources));
+        attributes_sources.map((single_source, single_index) => {
+            delete single_source[ 'sites' ];
+            delete single_source[ 'post_types' ];
+            delete single_source[ 'taxonomies' ];
+            delete single_source[ 'terms' ];
+            return single_source;
+        });
         attributes_sources.push(new_source_attributes);
 
         // have to add a new entry in both the attributes (for server-side values) and the state (for temporary client-side values, like the list of sites)
@@ -354,6 +364,13 @@ class news_block extends Component {
         return promise_result;
     };
 
+    /**
+     * Loads a list of taxonomies for the specific source, optionally based on the post_type and site
+     * @param index
+     * @param post_type
+     * @param site
+     * @returns {*}
+     */
     getTaxonomies = (index, post_type, site) => {
 
         this.setSourceArrayState(
@@ -401,6 +418,13 @@ class news_block extends Component {
         return promise_result;
     };
 
+    /**
+     * Loads a list of terms for the specific source, optionally based on the taxonomy and site
+     * @param index
+     * @param taxonomy
+     * @param site
+     * @returns {*}
+     */
     getTerms = (index, taxonomy, site) => {
         this.setSourceArrayState(
             index,
@@ -434,8 +458,28 @@ class news_block extends Component {
         return promise_result;
     };
 
-    updateRSSUrl = (rss_url) => {
-        this.props.setAttributes({rss_url});
+
+    /**
+     * Sets the react state for a specified array within the 'sources' array. Used to update the list of sites, post_types, taxonomies, and terms
+     * @param source_index
+     * @param which_array
+     * @param array_values
+     */
+    setSourceArrayState = (source_index, which_array, array_values) => {
+        this.setState((previousState) => {
+            const sources = previousState.sources.map((single_source, index) => {
+                if (source_index === index) {
+                    // this is the source we want to change from the array of sources
+                    single_source[ which_array ] = array_values;
+                    return single_source;
+
+                } else { // not our source, don't change it
+                    return single_source;
+                }
+            });
+            return {sources: sources};
+        })
+
     };
 
     /**
@@ -454,8 +498,7 @@ class news_block extends Component {
             }
             return single_source;
         });
-        //console.log(sources);
-        //console.log(this.state);
+
         this.setState({sources});
         // don't push the dynamic lists to the server, as they get recomputed and don't need to be statically saved.
         let sources_without_lists;
@@ -468,6 +511,16 @@ class news_block extends Component {
             return single_source;
         });
         this.props.setAttributes({sources: (sources_without_lists)});
+    };
+
+
+    /**
+     * For external sources, the only thing we care about is the rss url
+     * @param index
+     * @param rss_url
+     */
+    updateRSSUrl = (index, rss_url) => {
+        this.updateAttributeSourceItem(index, {rss_url});
     };
 
     /**
@@ -662,7 +715,6 @@ class news_block extends Component {
 
                     <Fragment >
                         {this.state.sources.map((source, key) => {
-                            //console.log(source);
                             return (this.state.sources && this.state.sources[ key ] && this.state.sources[ key ].sites && source.enabled)
                                 ?
                                 <News_block_component
@@ -705,20 +757,20 @@ class news_block extends Component {
                                         this.updateSelectedTerms(key, value)
                                     }}
 
-                                    //                                rss_url={source.props.attributes.rss_url}
-                                    //                                updateRSSUrl={(value) => {
-                                    //                                    this.updateRSSUrl(value, key)
-                                    //                                }}
+                                    rss_url={source.rss_url}
+                                    updateRSSUrl={(value) => {
+                                        this.updateRSSUrl(value, key)
+                                    }}
 
                                 />
                                 :
-                                <div >No active sources</div >
+                                []
 
 
                         })}
                     </Fragment >
                     :
-                    []
+                    <div >No active sources</div >
                 }
 
 

@@ -70,6 +70,8 @@
 "use strict";
 
 
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -94,7 +96,8 @@ var _wp$components = wp.components,
     ServerSideRender = _wp$components.ServerSideRender,
     PanelBody = _wp$components.PanelBody,
     PanelRow = _wp$components.PanelRow,
-    ToggleControl = _wp$components.ToggleControl; //Block inspector wrapper
+    ToggleControl = _wp$components.ToggleControl,
+    URLInputButton = _wp$components.URLInputButton; //Block inspector wrapper
 
 var _wp$data = wp.data,
     registerStore = _wp$data.registerStore,
@@ -204,9 +207,28 @@ var News_block_component = function (_Component3) {
     _inherits(News_block_component, _Component3);
 
     function News_block_component() {
+        var _ref;
+
+        var _temp, _this4, _ret;
+
         _classCallCheck(this, News_block_component);
 
-        return _possibleConstructorReturn(this, (News_block_component.__proto__ || Object.getPrototypeOf(News_block_component)).apply(this, arguments));
+        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+        }
+
+        return _ret = (_temp = (_this4 = _possibleConstructorReturn(this, (_ref = News_block_component.__proto__ || Object.getPrototypeOf(News_block_component)).call.apply(_ref, [this].concat(args))), _this4), _this4.autoOpen = function () {
+            if (_this4.props.is_external == false && _this4.props.selected_term_list.length > 0) {
+                // internal source that has already been configured. don't auto-open the properties
+                return false;
+            }
+            if (_this4.props.is_external == true && _this4.props.rss_url.length > 0) {
+                // external source that has already been configures. don't auto-open the properties
+                return false;
+            }
+            // new or unconfigured source. auto-open the properties.
+            return true;
+        }, _temp), _possibleConstructorReturn(_this4, _ret);
     }
 
     _createClass(News_block_component, [{
@@ -216,7 +238,8 @@ var News_block_component = function (_Component3) {
                 PanelBody,
                 {
                     title: this.props.title,
-                    initialOpen: true
+                    initialOpen: this.autoOpen()
+
                 },
                 React.createElement(ToggleControl, {
                     label: this.props.is_external ? 'Source (external)' : 'Source (internal)',
@@ -276,23 +299,9 @@ var news_block = function (_Component4) {
 
         var _this5 = _possibleConstructorReturn(this, (news_block.__proto__ || Object.getPrototypeOf(news_block)).apply(this, arguments));
 
-        _this5.setSourceArrayState = function (source_index, which_array, array_values) {
-            _this5.setState(function (previousState) {
-                var sources = previousState.sources.map(function (single_source, index) {
-                    if (source_index === index) {
-                        // this is the source we want to change from the array of sources
-                        single_source[which_array] = array_values;
-                        return single_source;
-                    } else {
-                        // not our source, don't change it
-                        return single_source;
-                    }
-                });
-                return { sources: sources };
-            });
-        };
-
         _this5.insertIntoSourceArrayState = function () {
+            var single_source = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+
             var new_source_state = {
                 sites: [{ value: 0, label: __('Loading sites...'), disabled: true }],
                 post_types: [{ value: '', label: __('Loading post types...'), disabled: true }],
@@ -309,6 +318,8 @@ var news_block = function (_Component4) {
                 selected_term_list: []
 
             };
+            new_source_state = _this5.constructor.attributesMerge(new_source_state, single_source);
+
             _this5.setState(function (previousState) {
                 var state_sources = void 0;
                 state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
@@ -333,6 +344,13 @@ var news_block = function (_Component4) {
             };
             var attributes_sources = void 0;
             attributes_sources = JSON.parse(JSON.stringify(_this5.state.sources));
+            attributes_sources.map(function (single_source, single_index) {
+                delete single_source['sites'];
+                delete single_source['post_types'];
+                delete single_source['taxonomies'];
+                delete single_source['terms'];
+                return single_source;
+            });
             attributes_sources.push(new_source_attributes);
 
             // have to add a new entry in both the attributes (for server-side values) and the state (for temporary client-side values, like the list of sites)
@@ -480,8 +498,20 @@ var news_block = function (_Component4) {
             return promise_result;
         };
 
-        _this5.updateRSSUrl = function (rss_url) {
-            _this5.props.setAttributes({ rss_url: rss_url });
+        _this5.setSourceArrayState = function (source_index, which_array, array_values) {
+            _this5.setState(function (previousState) {
+                var sources = previousState.sources.map(function (single_source, index) {
+                    if (source_index === index) {
+                        // this is the source we want to change from the array of sources
+                        single_source[which_array] = array_values;
+                        return single_source;
+                    } else {
+                        // not our source, don't change it
+                        return single_source;
+                    }
+                });
+                return { sources: sources };
+            });
         };
 
         _this5.updateAttributeSourceItem = function (index, dictionary) {
@@ -494,8 +524,7 @@ var news_block = function (_Component4) {
                 }
                 return single_source;
             });
-            //console.log(sources);
-            //console.log(this.state);
+
             _this5.setState({ sources: sources });
             // don't push the dynamic lists to the server, as they get recomputed and don't need to be statically saved.
             var sources_without_lists = void 0;
@@ -508,6 +537,10 @@ var news_block = function (_Component4) {
                 return single_source;
             });
             _this5.props.setAttributes({ sources: sources_without_lists });
+        };
+
+        _this5.updateRSSUrl = function (index, rss_url) {
+            _this5.updateAttributeSourceItem(index, { rss_url: rss_url });
         };
 
         _this5.updateSite = function (index, blog_id) {
@@ -587,9 +620,9 @@ var news_block = function (_Component4) {
             var _this6 = this;
 
             // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
-            if (this.state.sources.length > 0) {
-                this.state.sources.map(function (single_source, index) {
-                    _this6.insertIntoSourceArrayState();
+            if (this.props.attributes.sources.length > 0) {
+                this.props.attributes.sources.map(function (single_source, index) {
+                    _this6.insertIntoSourceArrayState(single_source);
                     _this6.getSites(index);
                     _this6.getPostTypes(index);
                     _this6.getTaxonomies(index);
@@ -599,48 +632,6 @@ var news_block = function (_Component4) {
                 this.insertSource();
             }
         }
-
-        /**
-         * Sets the react state for a specified array within the 'sources' array
-         * @param source_index
-         * @param which_array
-         * @param array_values
-         */
-
-
-        /**
-         * Inserts a blank entry in the state for a single source. Use in combination with creating a new source, or when
-         * loading the page (creating a blank entry for each source, then loading the data afterwards).
-         */
-
-
-        /**
-         * When user clicks 'insert' button, this creates a new blank entry in the state and props.attributes for the dynamic and server data.
-         * It then runs ajax to get the sites for the initial list of the blank entry.
-         */
-
-
-        /**
-         * Updates an item within a specific source, stored in the attributes.
-         * Specify the index of your source, and the {name:value} of the variable to save
-         * @param index
-         * @param dictionary key: value of the Item you want to update
-         */
-
-
-        /**
-         * Update the site selection, and get post types for that site
-         * @param index
-         * @param blog_id
-         */
-
-
-        /**
-         * Update the post type selection, and get taxonomies for that post type
-         * @param index
-         * @param post_type
-         */
-
     }, {
         key: 'render',
         value: function render() {
@@ -754,7 +745,6 @@ var news_block = function (_Component4) {
                     Fragment,
                     null,
                     this.state.sources.map(function (source, key) {
-                        //console.log(source);
                         return _this7.state.sources && _this7.state.sources[key] && _this7.state.sources[key].sites && source.enabled ? React.createElement(News_block_component, {
                             key: key,
                             map_key: key // react doesn't let child components see the special 'key' property, so we pass it a second time to a different prop they can use
@@ -793,20 +783,20 @@ var news_block = function (_Component4) {
                             terms: _this7.state.sources[key].terms,
                             updateSelectedTerms: function updateSelectedTerms(value) {
                                 _this7.updateSelectedTerms(key, value);
+                            },
+
+                            rss_url: source.rss_url,
+                            updateRSSUrl: function updateRSSUrl(value) {
+                                _this7.updateRSSUrl(value, key);
                             }
 
-                            //                                rss_url={source.props.attributes.rss_url}
-                            //                                updateRSSUrl={(value) => {
-                            //                                    this.updateRSSUrl(value, key)
-                            //                                }}
-
-                        }) : React.createElement(
-                            'div',
-                            null,
-                            'No active sources'
-                        );
+                        }) : [];
                     })
-                ) : []
+                ) : React.createElement(
+                    'div',
+                    null,
+                    'No active sources'
+                )
             ), React.createElement(
                 'div',
                 {
@@ -819,6 +809,110 @@ var news_block = function (_Component4) {
             )];
         }
     }], [{
+        key: 'attributesMerge',
+        value: function attributesMerge(defaults, options) {
+            var _iteratorNormalCompletion = true;
+            var _didIteratorError = false;
+            var _iteratorError = undefined;
+
+            try {
+                for (var _iterator = Object.entries(defaults)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    var _ref2 = _step.value;
+
+                    var _ref3 = _slicedToArray(_ref2, 2);
+
+                    var key = _ref3[0];
+                    var value = _ref3[1];
+
+                    if (options[key]) {
+                        defaults[key] = options[key]; // if array passed in has a value set for one of our defaults, copy the value over. otherwise, ignore that extra key-value pair.
+                    }
+                }
+            } catch (err) {
+                _didIteratorError = true;
+                _iteratorError = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion && _iterator.return) {
+                        _iterator.return();
+                    }
+                } finally {
+                    if (_didIteratorError) {
+                        throw _iteratorError;
+                    }
+                }
+            }
+
+            return defaults;
+        }
+
+        /**
+         * Inserts a blank entry in the state for a single source. Use in combination with creating a new source, or when
+         * loading the page (creating a blank entry for each source, then loading the data afterwards).
+         */
+
+
+        /**
+         * When user clicks 'insert' button, this creates a new blank entry in the state and props.attributes for the dynamic and server data.
+         * It then runs ajax to get the sites for the initial list of the blank entry.
+         */
+
+
+        /**
+         * Loads a list of taxonomies for the specific source, optionally based on the post_type and site
+         * @param index
+         * @param post_type
+         * @param site
+         * @returns {*}
+         */
+
+
+        /**
+         * Loads a list of terms for the specific source, optionally based on the taxonomy and site
+         * @param index
+         * @param taxonomy
+         * @param site
+         * @returns {*}
+         */
+
+
+        /**
+         * Sets the react state for a specified array within the 'sources' array. Used to update the list of sites, post_types, taxonomies, and terms
+         * @param source_index
+         * @param which_array
+         * @param array_values
+         */
+
+
+        /**
+         * Updates an item within a specific source, stored in the attributes.
+         * Specify the index of your source, and the {name:value} of the variable to save
+         * @param index
+         * @param dictionary key: value of the Item you want to update
+         */
+
+
+        /**
+         * For external sources, the only thing we care about is the rss url
+         * @param index
+         * @param rss_url
+         */
+
+
+        /**
+         * Update the site selection, and get post types for that site
+         * @param index
+         * @param blog_id
+         */
+
+
+        /**
+         * Update the post type selection, and get taxonomies for that post type
+         * @param index
+         * @param post_type
+         */
+
+    }, {
         key: 'preventLink',
 
 
@@ -870,9 +964,9 @@ registerBlockType('schrauger/news-block', {
 
     edit: news_block,
 
-    save: function save(_ref) {
-        var props = _ref.props,
-            className = _ref.className;
+    save: function save(_ref4) {
+        var props = _ref4.props,
+            className = _ref4.className;
 
 
         // this can simply return 'null', which tells wordpress to just save the input attributes.
