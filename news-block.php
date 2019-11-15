@@ -177,8 +177,10 @@ class news_block {
 
 		// if text-only, set a class that css will use to hide images.
 		$classes = ['news'];
+		$text_only = false;
 		if (($attributes['text_only_mode'] === true) || ($attributes['text_only_mode'] === 'true')){
 			$classes[] = 'text-only';
+			$text_only = true;
 		} else {
 			$classes[] = 'images';
 		}
@@ -237,15 +239,22 @@ class news_block {
                     ";
 				}
 
+				$image_html = "";
+				if ( ! $text_only ) {
+					$image_html = "
+					<a 
+                            target='{$post['target']}' 
+                            class='photo-prev' 
+                            href='{$post['permalink']}'
+                            style='background: url(\"{$post[ 'image' ]}\") no-repeat center center; background-size: cover;'>
+                        {$post['title']}
+                    </a>
+                    ";
+				}
+
 				$return_rendered_html .= "
                     <article>
-                        <a 
-                                target='{$post['target']}' 
-                                class='photo-prev' 
-                                href='{$post['permalink']}'
-                                style='background: url(\"{$post['image']}\") no-repeat center center; background-size: cover;'>
-                            {$post['title']}
-                        </a>
+                        {$image_html}
                         {$youtube_html}
                         <a 
                                 href='{$post['permalink']}' 
