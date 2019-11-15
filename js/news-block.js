@@ -593,6 +593,11 @@ console.log(new_source_state);
         this.updateAttributeSourceItem(index, {source_enabled})
     };
 
+
+    update_text_only_mode = (text_only_mode) => {
+        this.props.setAttributes({text_only_mode});
+    };
+
     update_date_restriction_mode = (date_restriction_mode) => {
         this.props.setAttributes({date_restriction_mode});
     };
@@ -620,6 +625,12 @@ console.log(new_source_state);
                     initialOpen={true}
                 >
 
+                    <ToggleControl
+                        label={(this.props.attributes.text_only_mode ? 'Text-only mode (enabled)' : 'Text-only mode (disabled)')}
+                        checked={this.props.attributes.text_only_mode}
+                        onChange={this.update_text_only_mode}
+                        help={this.props.attributes.text_only_mode ? 'Hide images from output' : 'Show images in output'}
+                    />
                     <ToggleControl
                         label={(this.props.attributes.date_restriction_mode ? 'Date filter (enabled)' : 'Date filter (disabled)')}
                         checked={this.props.attributes.date_restriction_mode}
@@ -819,6 +830,7 @@ registerBlockType(
                     }
                 ],
             },
+            text_only_mode: {type: 'boolean', default: false},
             date_restriction_mode: {type: 'boolean', default: false},
             earliest_date: {type: 'date', default: null},
             latest_date: {type: 'date', default: null},

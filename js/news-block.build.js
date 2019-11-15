@@ -601,6 +601,10 @@ var news_block = function (_Component4) {
             _this5.updateAttributeSourceItem(index, { source_enabled: source_enabled });
         };
 
+        _this5.update_text_only_mode = function (text_only_mode) {
+            _this5.props.setAttributes({ text_only_mode: text_only_mode });
+        };
+
         _this5.update_date_restriction_mode = function (date_restriction_mode) {
             _this5.props.setAttributes({ date_restriction_mode: date_restriction_mode });
         };
@@ -647,6 +651,12 @@ var news_block = function (_Component4) {
                         title: 'News Block Controls',
                         initialOpen: true
                     },
+                    React.createElement(ToggleControl, {
+                        label: this.props.attributes.text_only_mode ? 'Text-only mode (enabled)' : 'Text-only mode (disabled)',
+                        checked: this.props.attributes.text_only_mode,
+                        onChange: this.update_text_only_mode,
+                        help: this.props.attributes.text_only_mode ? 'Hide images from output' : 'Show images in output'
+                    }),
                     React.createElement(ToggleControl, {
                         label: this.props.attributes.date_restriction_mode ? 'Date filter (enabled)' : 'Date filter (disabled)',
                         checked: this.props.attributes.date_restriction_mode,
@@ -956,6 +966,7 @@ registerBlockType('schrauger/news-block', {
                 selected_term_list: []
             }]
         },
+        text_only_mode: { type: 'boolean', default: false },
         date_restriction_mode: { type: 'boolean', default: false },
         earliest_date: { type: 'date', default: null },
         latest_date: { type: 'date', default: null },

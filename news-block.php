@@ -104,6 +104,11 @@ class news_block {
 				]
 
 			],
+			'text_only_mode' => [
+				'type'    => 'boolean',
+				'default' => false
+				// when true, add a class to inhibit pictures
+			],
 			'date_restriction_mode' => [
 				'type'    => 'boolean',
 				'default' => false
@@ -168,6 +173,18 @@ class news_block {
 	 */
 	public static function render_news_callback( $attributes, $content ) {
 		$return_rendered_html    = "";
+
+		// if text-only, set a class that css will use to hide images.
+		$classes = ['news'];
+		if (($attributes['text_only_mode'] === true) || ($attributes['text_only_mode'] === 'true')){
+			$classes[] = 'text-only';
+		} else {
+			$classes[] = 'images';
+		}
+		$classes_string = implode(' ', $classes);
+		$return_rendered_html .= "<section class='{$classes_string}'>";
+
+
 		$attributes[ 'sources' ] = $attributes[ 'sources' ];
 		// loop through all our sources and build an array with all the posts
 		$news_posts = [];
@@ -245,6 +262,8 @@ class news_block {
                 
                 ";
 			}
+
+			$return_rendered_html .= "</section>";
 
 			return $return_rendered_html;
 		} else {
