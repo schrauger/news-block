@@ -275,13 +275,12 @@ class news_block extends Component {
     deleteSource = (index) => {
         this.setState((previousState) => {
             let remaining_sources_state;
-            remaining_sources_state = previousState.sources.slice(0);
+            remaining_sources_state = JSON.parse(JSON.stringify(previousState.sources));
             remaining_sources_state.splice(index, 1);
             return {sources: remaining_sources_state}
         }, () => {
             let remaining_sources;
             remaining_sources = JSON.parse(JSON.stringify(this.state.sources));
-            remaining_sources.splice(index, 1);
             this.props.setAttributes({sources: (remaining_sources)})
         });
 
@@ -726,8 +725,7 @@ class news_block extends Component {
 
                     <Fragment >
                         {this.state.sources.map((source, key) => {
-                            return (this.state.sources && this.state.sources[ key ] && this.state.sources[ key ].sites && source.source_enabled)
-                                ?
+                            return [
                                 <News_block_component
                                     key={key}
                                     map_key={key} // react doesn't let child components see the special 'key' property, so we pass it a second time to a different prop they can use
@@ -774,10 +772,7 @@ class news_block extends Component {
                                     }}
 
                                 />
-                                :
-                                []
-
-
+                            ]
                         })}
                     </Fragment >
                     :
