@@ -10,7 +10,7 @@
     color: #000;
     margin: 10px 0; }
   .news.images article {
-    width: 29%;
+    width: 28%;
     margin: 15px; }
     .news.images article .photo-prev {
       width: 100%;
@@ -24,5 +24,3 @@
     .news.images .in-news .innewsart {
       border-bottom: 1px solid #ccc;
       padding: 10px 0; }
-
-/*# sourceMappingURL=news-block.css.map */

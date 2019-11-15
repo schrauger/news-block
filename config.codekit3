@@ -25,24 +25,6 @@
 		"oAP": "/.gitignore",
 		"oF": 0
 		},
-	"/css/news-block.css": {
-		"aP": 1,
-		"bl": 0,
-		"ft": 16,
-		"ma": 0,
-		"oA": 0,
-		"oAP": "/css/news-block-min.css",
-		"oF": 0,
-		"oS": 3
-		},
-	"/css/news-block.css.map": {
-		"cB": 0,
-		"ft": 8192,
-		"hM": 0,
-		"oA": 0,
-		"oAP": "/css/news-block.css.map",
-		"oF": 0
-		},
 	"/css/news-block.scss": {
 		"aP": 0,
 		"bl": 0,
@@ -55,28 +37,6 @@
 		"oF": 0,
 		"oS": 0,
 		"uL": 1
-		},
-	"/js/news-block.build.js": {
-		"bF": 0,
-		"ft": 64,
-		"ma": 0,
-		"mi": 1,
-		"oA": 0,
-		"oAP": "/js/news-block.build-min.js",
-		"oF": 0,
-		"sC": 3,
-		"tS": 0
-		},
-	"/js/news-block.js": {
-		"bF": 0,
-		"ft": 64,
-		"ma": 0,
-		"mi": 1,
-		"oA": 0,
-		"oAP": "/js/news-block-min.js",
-		"oF": 0,
-		"sC": 3,
-		"tS": 0
 		},
 	"/news-block-endpoint.php": {
 		"cB": 0,
@@ -92,14 +52,6 @@
 		"hM": 0,
 		"oA": 0,
 		"oAP": "/news-block-excerpt.php",
-		"oF": 0
-		},
-	"/news-block.php": {
-		"cB": 0,
-		"ft": 8192,
-		"hM": 0,
-		"oA": 0,
-		"oAP": "/news-block.php",
 		"oF": 0
 		},
 	"/package.json": {
