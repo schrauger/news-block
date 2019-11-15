@@ -12,7 +12,7 @@ License: GPL2
 //locate_template( 'simple_html_dom.php', true, true );
 require_once( 'news-block-excerpt.php' );
 require_once( 'news-block-endpoint.php' );
-require_once( 'simple_html_dom.php');
+require_once( 'simple_html_dom.php' );
 
 
 class news_block {
@@ -25,9 +25,9 @@ class news_block {
 
 		wp_enqueue_style(
 			'news-block-plugin-style',
-			plugins_url('css/news-block.css', __FILE__), // this will load the current theme's style.css file, not necessarily the parent theme style.
+			plugins_url( 'css/news-block.css', __FILE__ ), // this will load the current theme's style.css file, not necessarily the parent theme style.
 			false,
-			filemtime( plugin_dir_path(__FILE__).'css/news-block.css'),
+			filemtime( plugin_dir_path( __FILE__ ) . 'css/news-block.css' ),
 			false
 		);
 
@@ -64,7 +64,7 @@ class news_block {
 				'type'    => 'array',
 				'default' => '',
 				'query'   => [
-					'source_enabled'            => [
+					'source_enabled'     => [
 						'type'    => 'boolean',
 						'default' => true
 					],
@@ -104,7 +104,7 @@ class news_block {
 				]
 
 			],
-			'text_only_mode' => [
+			'text_only_mode'        => [
 				'type'    => 'boolean',
 				'default' => false
 				// when true, add a class to inhibit pictures
@@ -130,9 +130,9 @@ class news_block {
 				'type'    => 'integer',
 				'default' => 55
 			],
-			'className' => [
+			'className'             => [
 				// this is the attribute created if the user chooses 'additional css class' for the block
-				'type' => 'string',
+				'type'    => 'string',
 				'default' => ''
 			]
 		];
@@ -178,23 +178,23 @@ class news_block {
 	 */
 	public static function render_news_callback( $attributes, $content ) {
 
-		$return_rendered_html    = "";
+		$return_rendered_html = "";
 
 		// if text-only, set a class that css will use to hide images.
-		$classes = ['news'];
+		$classes   = [ 'news' ];
 		$text_only = false;
-		if (($attributes['text_only_mode'] === true) || ($attributes['text_only_mode'] === 'true')){
+		if ( ( $attributes[ 'text_only_mode' ] === true ) || ( $attributes[ 'text_only_mode' ] === 'true' ) ) {
 			$classes[] = 'text-only';
 			$text_only = true;
 		} else {
 			$classes[] = 'images';
 		}
 		// adds support for 'additional css class' in the advanced section of any block
-		if ($attributes['className']){
-			$classes[] = $attributes['className'];
+		if ( $attributes[ 'className' ] ) {
+			$classes[] = $attributes[ 'className' ];
 		}
 
-		$classes_string = implode(' ', $classes);
+		$classes_string       = implode( ' ', $classes );
 		$return_rendered_html .= "<section class='{$classes_string}'>";
 
 
@@ -212,7 +212,7 @@ class news_block {
 					}
 				} else {
 					// external source
-					$external_posts = self::external_site_query($attributes, $source);
+					$external_posts = self::external_site_query( $attributes, $source );
 					if ( count( $external_posts ) > 0 ) {
 						$news_posts = array_merge( $news_posts, $external_posts );
 					}
@@ -388,23 +388,28 @@ class news_block {
 
 	/**
 	 * Disables the filter that prevents unsafe urls from loading.
+	 *
 	 * @param $args
 	 *
 	 * @return mixed
 	 */
-	public static function disable_safety_filter($args){
-		$args['reject_unsafe_urls'] = false;
+	public static function disable_safety_filter( $args ) {
+		$args[ 'reject_unsafe_urls' ] = false;
+
 		return $args;
 	}
 
 	/**
-	 * Gets the feed from a url. If that url resolves to an internally routable ip address in a specified list of domains, it disables 'reject_unsafe_urls' to allow the request to continue.
+	 * Gets the feed from a url. If that url resolves to an internally routable ip address in a specified list of
+	 * domains, it disables 'reject_unsafe_urls' to allow the request to continue.
+	 *
 	 * @param $url
+	 *
 	 * @return mixed
 	 */
-	public static function external_site_query_feed($url){
-		$url_array = parse_url($url);
-		$host = $url_array['host'];
+	public static function external_site_query_feed( $url ) {
+		$url_array = parse_url( $url );
+		$host      = $url_array[ 'host' ];
 
 		//@TODO hardcoded value; perhaps make this into an admin-accessible option
 		$allowed_unsafe_domains = [
@@ -413,18 +418,21 @@ class news_block {
 		];
 
 		$safety_disabled = false;
-		if (array_search($host, $allowed_unsafe_domains) !== false){
+		if ( array_search( $host, $allowed_unsafe_domains ) !== false ) {
 			$safety_disabled = true;
-			add_filter( 'http_request_args', array(__CLASS__,'disable_safety_filter') );
+			add_filter( 'http_request_args', array( __CLASS__, 'disable_safety_filter' ) );
 		}
 
-		add_filter( 'wp_feed_cache_transient_lifetime', array(__CLASS__, 'external_site_transient_lifetime') ); // refresh every 10 minutes
+		add_filter( 'wp_feed_cache_transient_lifetime', array(
+			__CLASS__,
+			'external_site_transient_lifetime'
+		) ); // refresh every 10 minutes
 		$feed = fetch_feed( $url );
-		remove_filter( 'wp_feed_cache_transient_lifetime',array(__CLASS__, 'external_site_transient_lifetime') );
+		remove_filter( 'wp_feed_cache_transient_lifetime', array( __CLASS__, 'external_site_transient_lifetime' ) );
 
 		// restore filter after making our request
-		if ($safety_disabled){
-			remove_filter('http_request_args', array(__CLASS__,'disable_safety_filter') );
+		if ( $safety_disabled ) {
+			remove_filter( 'http_request_args', array( __CLASS__, 'disable_safety_filter' ) );
 		}
 
 		return $feed;
@@ -433,9 +441,9 @@ class news_block {
 
 	public static function external_site_query( $attributes, $source ) {
 		$news_posts = [];
-		$feed = self::external_site_query_feed($source['rss_url']);
-		if ( ! is_wp_error( $feed)) {
-			$max_items   = $feed->get_item_quantity( $attributes[ 'max_news_articles' ] );
+		$feed       = self::external_site_query_feed( $source[ 'rss_url' ] );
+		if ( ! is_wp_error( $feed ) ) {
+			$max_items  = $feed->get_item_quantity( $attributes[ 'max_news_articles' ] );
 			$feed_items = $feed->get_items( 0, $max_items );
 
 			foreach ( $feed_items as $item ) {
@@ -458,27 +466,27 @@ class news_block {
 					$image_url = '/wp-content/themes/ucf-health-theme/images/logos/ucf-building.jpg'; // default stock image if image not set
 				}
 
-				$UTC = new DateTimeZone("UTC");
-				$timezoneEST = new DateTimeZone("America/New_York");
-				$datesort = new DateTime($item->get_date('Y-m-d H:i:s' ), $UTC);
-				$datesort->setTimezone($timezoneEST);
-				$date = new DateTime($item->get_date(), $UTC);
-				$date->setTimezone($timezoneEST);
+				$UTC         = new DateTimeZone( "UTC" );
+				$timezoneEST = new DateTimeZone( "America/New_York" );
+				$datesort    = new DateTime( $item->get_date( 'Y-m-d H:i:s' ), $UTC );
+				$datesort->setTimezone( $timezoneEST );
+				$date = new DateTime( $item->get_date(), $UTC );
+				$date->setTimezone( $timezoneEST );
 
 				array_push( $news_posts, array(
 					'image'     => $image_url,
 					'permalink' => $item->get_link(),
 					'title'     => $item->get_title(),
 					'piece'     => $content_minus_image,
-					'datesort'  => $datesort->format('Y-m-d H:i:s T'),
-					'date'      => $date->format('F d, Y'),
+					'datesort'  => $datesort->format( 'Y-m-d H:i:s T' ),
+					'date'      => $date->format( 'F d, Y' ),
 					'class'     => 'class="news-preview-image"',
 					'target'    => 'target="_blank"'
 				) );
 			}
 		}
-		add_filter( 'the_excerpt_rss', array(__CLASS__, 'wcs_post_thumbnails_in_feeds' ));
-		add_filter( 'the_content_feed', array(__CLASS__, 'wcs_post_thumbnails_in_feeds' ));
+		add_filter( 'the_excerpt_rss', array( __CLASS__, 'wcs_post_thumbnails_in_feeds' ) );
+		add_filter( 'the_content_feed', array( __CLASS__, 'wcs_post_thumbnails_in_feeds' ) );
 
 		return $news_posts;
 	}

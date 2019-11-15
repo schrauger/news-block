@@ -90,7 +90,6 @@ class News_block_component_external extends Component {
 }
 
 
-
 // note: React components must start with a Capital letter
 class News_block_component extends Component {
 
@@ -106,11 +105,12 @@ class News_block_component extends Component {
         // new or unconfigured source. auto-open the properties.
         return true;
     }
+
     render() {
         return (
             <PanelBody
                 title={this.props.title}
-                initialOpen={ this.autoOpen()}
+                initialOpen={this.autoOpen()}
 
             >
                 <ToggleControl
@@ -178,7 +178,7 @@ class news_block extends Component {
 
 
     componentDidMount() {
-console.log(this.props.attributes.sources);
+        console.log(this.props.attributes.sources);
         // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
         if (this.props.attributes.sources.length > 0) {
             this.props.attributes.sources.map((single_source, index) => {
@@ -196,7 +196,7 @@ console.log(this.props.attributes.sources);
 
     static attributesMerge(defaults, options) {
         for (const [ key, value ] of Object.entries(defaults)) {
-            if ((options[ key ] !== undefined) && (options[key] !== null)) {
+            if ((options[ key ] !== undefined) && (options[ key ] !== null)) {
                 defaults[ key ] = options[ key ] // if array passed in has a value set for one of our defaults, copy the value over. otherwise, ignore that extra key-value pair.
             }
         }
@@ -223,9 +223,9 @@ console.log(this.props.attributes.sources);
             selected_term_list: []
 
         };
-console.log(single_source);
+        console.log(single_source);
         new_source_state = this.constructor.attributesMerge(new_source_state, single_source);
-console.log(new_source_state);
+        console.log(new_source_state);
         this.setState((previousState) => {
             let state_sources;
             state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
