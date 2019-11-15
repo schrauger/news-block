@@ -124,11 +124,11 @@ class news_block {
 			],
 			'max_news_articles'     => [
 				'type'    => 'integer',
-				'default' => 8
+				'default' => 5
 			],
 			'max_excerpt_length'    => [
 				'type'    => 'integer',
-				'default' => 20
+				'default' => 55
 			]
 		];
 
@@ -172,6 +172,7 @@ class news_block {
 	 * @return string // like shortcode callbacks, this is the html that we render in place of the block.
 	 */
 	public static function render_news_callback( $attributes, $content ) {
+
 		$return_rendered_html    = "";
 
 		// if text-only, set a class that css will use to hide images.

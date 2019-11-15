@@ -715,7 +715,7 @@ var news_block = function (_Component4) {
                                     PanelRow,
                                     { key: key },
                                     React.createElement(ToggleControl, {
-                                        label: source.source_enabled ? 'Source ' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled',
+                                        label: source.source_enabled ? 'Source #' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled',
                                         checked: source.source_enabled,
                                         onChange: function onChange(value) {
                                             _this7.update_enabled_mode(key, value);
@@ -748,7 +748,7 @@ var news_block = function (_Component4) {
                         React.createElement(
                             'button',
                             { onClick: this.insertSource },
-                            'Add new'
+                            'Add another source'
                         )
                     )
                 ),
@@ -970,7 +970,7 @@ registerBlockType('schrauger/news-block', {
         date_restriction_mode: { type: 'boolean', default: false },
         earliest_date: { type: 'date', default: null },
         latest_date: { type: 'date', default: null },
-        max_news_articles: { type: 'number', default: 6 },
+        max_news_articles: { type: 'number', default: 5 },
         max_excerpt_length: { type: 'number', default: 55 }
     },
 

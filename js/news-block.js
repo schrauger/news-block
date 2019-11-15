@@ -689,7 +689,7 @@ console.log(new_source_state);
                                     <Fragment key={key} >
                                         <PanelRow key={key} >
                                             <ToggleControl
-                                                label={(source.source_enabled ? 'Source ' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled')}
+                                                label={(source.source_enabled ? 'Source #' + (key + 1) + ' Enabled' : 'Source ' + (key + 1) + ' Disabled')}
                                                 checked={source.source_enabled}
                                                 onChange={(value) => {
                                                     this.update_enabled_mode(key, value)
@@ -718,7 +718,7 @@ console.log(new_source_state);
                         <PanelRow >Add sources</PanelRow >
                     }
                     <PanelRow >
-                        <button onClick={this.insertSource} >Add new</button >
+                        <button onClick={this.insertSource} >Add another source</button >
                     </PanelRow >
                 </PanelBody >
                 {(this.props.attributes.sources.length > 0)
@@ -834,7 +834,7 @@ registerBlockType(
             date_restriction_mode: {type: 'boolean', default: false},
             earliest_date: {type: 'date', default: null},
             latest_date: {type: 'date', default: null},
-            max_news_articles: {type: 'number', default: 6},
+            max_news_articles: {type: 'number', default: 5},
             max_excerpt_length: {type: 'number', default: 55},
         },
 
