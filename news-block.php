@@ -129,6 +129,11 @@ class news_block {
 			'max_excerpt_length'    => [
 				'type'    => 'integer',
 				'default' => 55
+			],
+			'className' => [
+				// this is the attribute created if the user chooses 'additional css class' for the block
+				'type' => 'string',
+				'default' => ''
 			]
 		];
 
@@ -184,6 +189,11 @@ class news_block {
 		} else {
 			$classes[] = 'images';
 		}
+		// adds support for 'additional css class' in the advanced section of any block
+		if ($attributes['className']){
+			$classes[] = $attributes['className'];
+		}
+
 		$classes_string = implode(' ', $classes);
 		$return_rendered_html .= "<section class='{$classes_string}'>";
 
