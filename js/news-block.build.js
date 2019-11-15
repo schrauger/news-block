@@ -361,13 +361,12 @@ var news_block = function (_Component4) {
         _this5.deleteSource = function (index) {
             _this5.setState(function (previousState) {
                 var remaining_sources_state = void 0;
-                remaining_sources_state = previousState.sources.slice(0);
+                remaining_sources_state = JSON.parse(JSON.stringify(previousState.sources));
                 remaining_sources_state.splice(index, 1);
                 return { sources: remaining_sources_state };
             }, function () {
                 var remaining_sources = void 0;
                 remaining_sources = JSON.parse(JSON.stringify(_this5.state.sources));
-                remaining_sources.splice(index, 1);
                 _this5.props.setAttributes({ sources: remaining_sources });
             });
         };
@@ -756,7 +755,7 @@ var news_block = function (_Component4) {
                     Fragment,
                     null,
                     this.state.sources.map(function (source, key) {
-                        return _this7.state.sources && _this7.state.sources[key] && _this7.state.sources[key].sites && source.source_enabled ? React.createElement(News_block_component, {
+                        return [React.createElement(News_block_component, {
                             key: key,
                             map_key: key // react doesn't let child components see the special 'key' property, so we pass it a second time to a different prop they can use
 
@@ -801,7 +800,7 @@ var news_block = function (_Component4) {
                                 _this7.updateRSSUrl(key, value);
                             }
 
-                        }) : [];
+                        })];
                     })
                 ) : React.createElement(
                     'div',
