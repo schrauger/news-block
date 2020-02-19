@@ -43,3 +43,15 @@ $yellow: #f7c100;
 		}
 	}
 }
+
+@media (min-width: 1000px) {
+
+	.news {
+		&.images {
+			article {
+				width: 100% !important;
+			}
+		}
+	}
+	
+}
