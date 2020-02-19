@@ -17,8 +17,13 @@ class news_block_excerpt {
 	private $more_string;
 
 	public function __construct( $excerpt_length = 55, $more_string = '...' ) {
-		$this->length      = (int)$excerpt_length + 1; // first 'word' in excerpt is a non breaking space. add one to the max_count to account for this.
-		$this->more_string = $more_string;
+		if ((int)$excerpt_length > 0){
+			$this->length      = (int)$excerpt_length + 1; // first 'word' in excerpt is a non breaking space. add one to the max_count to account for this.
+			$this->more_string = $more_string;
+		} else {
+			$this->length = 0;
+			$this->more_string = '';
+		}
 		$this->add_filters();
 	}
 
