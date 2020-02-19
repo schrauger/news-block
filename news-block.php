@@ -271,11 +271,11 @@ class news_block {
                                 alt='${post['title']}'
                                 title='${post['title']}'>
                             ${post['title']}
-                            <small>
-                                {$notification_html}
-                                {$post['date']}
-                            </small>
                         </a>
+                        <small>
+                            {$notification_html}
+                            {$post['date']}
+                        </small>
                         <p>{$post['piece']}</p>
                     </article>
                         
