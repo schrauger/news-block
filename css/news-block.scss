@@ -44,7 +44,7 @@ $yellow: #f7c100;
 	}
 }
 
-@media (min-width: 1000px) {
+@media screen and (max-width: 999px) {
 
 	.news {
 		&.images {

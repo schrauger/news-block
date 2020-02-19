@@ -25,6 +25,6 @@
       border-bottom: 1px solid #ccc;
       padding: 10px 0; }
 
-@media (min-width: 1000px) {
+@media screen and (max-width: 999px) {
   .news.images article {
     width: 100% !important; } }
