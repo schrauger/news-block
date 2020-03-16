@@ -165,9 +165,14 @@ class news_block_endpoint {
 			$switched_blog = true;
 		}
 
-		$wp_list = get_post_types(['public' => true], 'objects');
+		$wp_list = get_post_types(['public' => true], 'objects'); //public gets rid of internal post types
 		foreach ($wp_list as $post_type) {
-			array_push($return_array, [ 'value' => $post_type->name, 'label' => $post_type->label]);
+			// only show post types that actually have published posts
+			$count_posts = wp_count_posts($post_type->name);
+			$count_published = $count_posts->publish;
+			if ($count_published > 0) {
+				array_push( $return_array, [ 'value' => $post_type->name, 'label' => $post_type->label ] );
+			}
 		}
 
 		if ( $switched_blog ) {
