@@ -18,6 +18,9 @@
       display: block;
       text-indent: -9999px;
       margin-bottom: 10px; }
+    .news.images article small {
+      display: block;
+      clear: both; }
   .news.images .in-news {
     width: 250px;
     float: left; }
