@@ -500,9 +500,8 @@ class news_block {
 	 */
 	public static function tax_query( $source ) {
 		//$attributes = self::shortcode_atts( $attributes );
-
 		$return_array = [];
-		if ( $source[ 'taxonomy_term_mode' ] === 'false' ) {
+		if ( $source[ 'taxonomy_term_mode' ] === false || $source[ 'taxonomy_term_mode' ] === 'false') { // type changes from boolean to string depending on if editor or on page. stupid inconsistent WP.
 			// whitelist mode.
 			$relation = "OR";
 			$operator = "IN";
@@ -511,7 +510,6 @@ class news_block {
 			$relation = "AND";
 			$operator = "NOT IN";
 		}
-
 		// apply AND or OR if specifying more than one slug
 		if ( sizeof( $source[ 'selected_term_list' ] ) > 1 ) {
 			$return_array[ 'relation' ] = $relation;
@@ -528,7 +526,6 @@ class news_block {
 				'operator' => $operator
 			] );
 		}
-
 		return $return_array;
 	}
 
