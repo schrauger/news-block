@@ -143,6 +143,7 @@ var News_block_component_internal = function (_Component) {
                         Fragment,
                         null,
                         React.createElement(SelectControl, {
+                            valuez: this.props.taxonomy,
                             value: this.props.taxonomy,
                             label: __('Select a taxonomy'),
                             options: this.props.taxonomies,
@@ -378,7 +379,7 @@ var news_block = function (_Component4) {
                 // load sites into select list
                 var options_site_list = [];
                 if (sites.length > 0) {
-                    options_site_list.push({ value: 0, label: __('Select a site'), disabled: true });
+                    options_site_list.push({ value: 0, label: __('Select a site'), disabled: false });
                     sites.forEach(function (site) {
                         options_site_list.push({ value: site.value, label: site.label });
                     });
@@ -388,7 +389,7 @@ var news_block = function (_Component4) {
 
                 _this5.setSourceArrayState(index, 'sites', options_site_list);
 
-                if (_this5.state.sources[index].blog_id) {
+                if (_this5.state.sources[index].blog_id >= 1) {
                     _this5.getPostTypes(index, _this5.state.sources[index].blog_id);
                 }
             });
@@ -413,7 +414,15 @@ var news_block = function (_Component4) {
                 // load post types into select list
                 var options_post_type_list = [];
                 if (post_types.length > 0) {
-                    options_post_type_list.push({ value: '', label: __('Select a post type'), disabled: true }); // value must be empty string; if null, the value ends up being the label.
+                    options_post_type_list.push({ value: '', label: __('Select a post type'), disabled: false });
+                    // don't mark this as disabled. otherwise, if a new site is selected, the old post type selected
+                    // might not exist in the new site, causing react to be unable to detect onchange with a single option.
+                    // ex: site 1, post_type person. changed to site 2, which has no person posttype but has a single news type.
+                    //     news is auto selected (as it's the only non-disabled option), but it doesn't trigger the onChange.
+                    //     And onChange can't be triggered since it's the only option and thus won't change with a user input.
+                    //     By leaving this empty "Select a ..." option as enabled, that instead becomes the autoselected one,
+                    //     and the user can thus select the single other option in the list, triggering onChange events.
+
                     post_types.forEach(function (post_type) {
                         options_post_type_list.push({ value: post_type.value, label: post_type.label });
                     });
@@ -423,7 +432,7 @@ var news_block = function (_Component4) {
 
                 _this5.setSourceArrayState(index, 'post_types', options_post_type_list);
 
-                if (_this5.state.sources[index].post_type) {
+                if (_this5.state.sources[index].post_type >= 1) {
                     _this5.getTaxonomies(index, _this5.state.sources[index].post_type, site);
                 }
             });
@@ -450,7 +459,7 @@ var news_block = function (_Component4) {
                 // load taxonomies into select list
                 var options_taxonomy_list = [];
                 if (taxonomies.length > 0) {
-                    options_taxonomy_list.push({ value: '', label: __('Select a taxonomy'), disabled: true }); // value must be empty string; if null, the value ends up being the label.
+                    options_taxonomy_list.push({ value: '', label: __('Select a taxonomy'), disabled: false }); // value must be empty string; if null, the value ends up being the label.
 
                     taxonomies.forEach(function (taxonomy) {
                         options_taxonomy_list.push({ value: taxonomy.value, label: taxonomy.label });
@@ -461,7 +470,7 @@ var news_block = function (_Component4) {
 
                 _this5.setSourceArrayState(index, 'taxonomies', options_taxonomy_list);
 
-                if (_this5.state.sources[index].taxonomy) {
+                if (_this5.state.sources[index].taxonomy >= 1) {
                     _this5.getTerms(index, _this5.state.sources[index].taxonomy, site);
                 }
             });
@@ -525,6 +534,7 @@ var news_block = function (_Component4) {
             });
 
             _this5.setState({ sources: sources });
+            console.log(sources);
             // don't push the dynamic lists to the server, as they get recomputed and don't need to be statically saved.
             var sources_without_lists = void 0;
             sources_without_lists = JSON.parse(JSON.stringify(sources)); // force a clone so we don't clobber state when setting server attributes
