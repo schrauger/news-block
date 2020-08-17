@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 1.4.0
+Version: 1.4.1
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -156,12 +156,12 @@ class news_block {
 	}
 
 	// Custom excerpt word count length for copy, with the 'more' elipsis counting as one of the words
-	public static function excerpt_length( $length ) {
+	public static function excerpt_length( $length = 8) {
 		return 8;
 	}
 
 	// Custom excerpt ellipses
-	public static function excerpt_more( $more_string ) {
+	public static function excerpt_more( $more_string = '...') {
 		return '...';
 	}
 
@@ -452,7 +452,7 @@ class news_block {
 				/* @var SimplePie_Item $item */
 
 				/* get thumbnail */
-				$htmlDOM = new simple_html_dom();
+				$htmlDOM = new com\schrauger\news_block\simple_html_dom();
 				$htmlDOM->load( $item->get_content() );
 				$image     = $htmlDOM->find( 'img', 0 );
 				$image_url = $image->src;
@@ -461,8 +461,7 @@ class news_block {
 				$image->outertext = '';
 				$htmlDOM->save();
 
-				$content_minus_image = wp_trim_words( $htmlDOM, new_excerpt_length(), new_excerpt_more() ); // these functions are defined in functions.php
-
+				$content_minus_image = wp_trim_words( $htmlDOM, apply_filters('excerpt_length', self::excerpt_length() ), apply_filters('excerpt_more', self::excerpt_more()) ); // use any user-defined excerpt lengths to generate our own excerpt for external rss results
 				if ( ! isset( $image_url ) ) // if exists
 				{
 					$image_url = '/wp-content/themes/ucf-health-theme/images/logos/ucf-building.jpg'; // default stock image if image not set
