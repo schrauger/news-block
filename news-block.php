@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 1.3.2
+Version: 1.4.0
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -230,7 +230,7 @@ class news_block {
 		// trim down our array based on the max number we want to display
 		$news_posts = array_slice( $news_posts, 0, $attributes[ 'max_news_articles' ] );
 		// finally, print out all the posts
-		if ( sizeof( $news_posts ) > 0 ) {
+		if ( is_array($news_posts) && sizeof( $news_posts ) > 0 ) {
 			foreach ( $news_posts as $post ) {
 
 				$youtube_html = "";
@@ -305,9 +305,11 @@ class news_block {
 		$return_news_posts = [];
 
 		$switched_blog = false;
-		if ( get_current_blog_id() != $source[ 'blog_id' ] ) {
-			switch_to_blog( $source[ 'blog_id' ] );
-			$switched_blog = true;
+		if (is_multisite()) {
+			if ( get_current_blog_id() != $source[ 'blog_id' ] ) {
+				switch_to_blog( $source[ 'blog_id' ] );
+				$switched_blog = true;
+			}
 		}
 		$tax_query = self::tax_query( $source );
 
@@ -318,7 +320,7 @@ class news_block {
 		] );
 
 		// restrict to selected terms from taxonomy
-		if ( sizeof( $tax_query ) > 0 ) {
+		if ( is_array($tax_query) && sizeof( $tax_query ) > 0 ) {
 			$query_args = array_merge( $query_args, [
 				'tax_query' => [ $tax_query ], // must be inside an array
 			] );
@@ -511,14 +513,14 @@ class news_block {
 			$operator = "NOT IN";
 		}
 		// apply AND or OR if specifying more than one slug
-		if ( sizeof( $source[ 'selected_term_list' ] ) > 1 ) {
+		if ((is_array( $source[ 'selected_term_list' ] )) && ( sizeof( $source[ 'selected_term_list' ] ) > 1 )) {
 			$return_array[ 'relation' ] = $relation;
 		}
 
 		// looping through each term and adding an explicit tax query for each one.
 		// we might be able to simply apply all terms to the 'terms' operator as it accepts an array,
 		// but I'm not sure what the behaviour is with IN vs NOT IN. we need (OR with IN) and (AND with NOT IN).
-		foreach ( $source[ 'selected_term_list' ] as $slug ) {
+		foreach ( (array) $source[ 'selected_term_list' ] as $slug ) {
 			array_push( $return_array, [
 				'taxonomy' => $source[ 'taxonomy' ],
 				'field'    => 'slug',

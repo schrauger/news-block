@@ -135,9 +135,14 @@ class news_block_endpoint {
 
 
 	public function get_sites_list() {
-		$wp_list = get_sites();
 
-		return $this->get_useful_site_list($wp_list);
+		if (is_multisite()){
+			$wp_list = get_sites();
+			return $this->get_useful_site_list($wp_list);
+		} else {
+			return [['value' => 1, 'label' => get_bloginfo('name')]];
+		}
+
 	}
 
 	public function get_useful_site_list($list_of_sites){
@@ -146,7 +151,7 @@ class news_block_endpoint {
 		foreach ($list_of_sites as $site){
 			$inner_request['blog_id'] = $site->blog_id;
 			$post_types = $this->get_post_types_list($inner_request); // this function normally uses the request object, so we're passing it the data it expects
-			if (sizeof($post_types) > 0){
+			if (is_array($post_types) && sizeof($post_types) > 0){
 				array_push($return_array, [ 'value' => $site->blog_id, 'label' => $site->__get('blogname')]);
 			}
 		}
@@ -165,9 +170,11 @@ class news_block_endpoint {
 		$blog_id = $request['blog_id'];
 
 		$switched_blog = false;
-		if ($blog_id && (get_current_blog_id() !== $blog_id)){
-			switch_to_blog($blog_id);
-			$switched_blog = true;
+		if (is_multisite()) {
+			if ( $blog_id && ( get_current_blog_id() !== $blog_id ) ) {
+				switch_to_blog( $blog_id );
+				$switched_blog = true;
+			}
 		}
 
 		$wp_list = get_post_types(['public' => true], 'objects'); //public gets rid of internal post types
@@ -194,7 +201,7 @@ class news_block_endpoint {
 			//			echo "</pre>";
 			$useful_tax_list = $this->get_useful_taxonomies_list($wp_tax_list);
 
-			if (($count_published > 0) && (sizeof($useful_tax_list) > 0)) {
+			if (($count_published > 0) && ((is_array($useful_tax_list)) && (sizeof($useful_tax_list) > 0))) {
 				array_push( $return_array, [ 'value' => $post_type->name, 'label' => $post_type->label ] );
 			}
 		}
@@ -217,11 +224,12 @@ class news_block_endpoint {
 		$return_array = [];
 
 		$switched_blog = false;
-		if ($blog_id && (get_current_blog_id() !== $blog_id)){
-			switch_to_blog($blog_id);
-			$switched_blog = true;
+		if (is_multisite()) {
+			if ( $blog_id && ( get_current_blog_id() !== $blog_id ) ) {
+				switch_to_blog( $blog_id );
+				$switched_blog = true;
+			}
 		}
-
 		if ($post_type) {
 			$wp_list = get_object_taxonomies($post_type, 'objects');
 		} else {
@@ -268,9 +276,11 @@ class news_block_endpoint {
 		$return_array = [];
 
 		$switched_blog = false;
-		if ($blog_id && (get_current_blog_id() !== $blog_id)){
-			switch_to_blog($blog_id);
-			$switched_blog = true;
+		if (is_multisite()) {
+			if ( $blog_id && ( get_current_blog_id() !== $blog_id ) ) {
+				switch_to_blog( $blog_id );
+				$switched_blog = true;
+			}
 		}
 
 		if ($taxonomy) {
