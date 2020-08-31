@@ -956,7 +956,7 @@ var news_block = function (_Component4) {
 registerBlockType('schrauger/news-block', {
     title: __('News Block', 'news-block-for-gutenberg'),
     description: __('Lists the most recent posts from newest to oldest, with the ability to pull in and sort from multiple internal and external sources.', 'news-block-for-gutenberg'),
-    icon: 'format-aside',
+    icon: 'welcome-widgets-menus',
     category: 'embed',
     attributes: {
         // need ability for two or more sources. probably repeating field.
