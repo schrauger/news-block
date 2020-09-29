@@ -143,7 +143,6 @@ var News_block_component_internal = function (_Component) {
                         Fragment,
                         null,
                         React.createElement(SelectControl, {
-                            valuez: this.props.taxonomy,
                             value: this.props.taxonomy,
                             label: __('Select a taxonomy'),
                             options: this.props.taxonomies,
@@ -318,9 +317,9 @@ var news_block = function (_Component4) {
                 selected_term_list: []
 
             };
-            console.log(single_source);
+            //console.log(single_source);
             new_source_state = _this5.constructor.attributesMerge(new_source_state, single_source);
-            console.log(new_source_state);
+            //console.log(new_source_state);
             _this5.setState(function (previousState) {
                 var state_sources = void 0;
                 state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
@@ -389,7 +388,7 @@ var news_block = function (_Component4) {
 
                 _this5.setSourceArrayState(index, 'sites', options_site_list);
 
-                if (_this5.state.sources[index].blog_id >= 1) {
+                if (_this5.state.sources[index].blog_id) {
                     _this5.getPostTypes(index, _this5.state.sources[index].blog_id);
                 }
             });
@@ -398,7 +397,6 @@ var news_block = function (_Component4) {
         };
 
         _this5.getPostTypes = function (index, site) {
-
             _this5.setSourceArrayState(index, 'post_types', [{ value: '', label: __('Loading post types...'), disabled: true }]);
             _this5.setSourceArrayState(index, 'taxonomies', []);
             _this5.setSourceArrayState(index, 'terms', []);
@@ -432,7 +430,7 @@ var news_block = function (_Component4) {
 
                 _this5.setSourceArrayState(index, 'post_types', options_post_type_list);
 
-                if (_this5.state.sources[index].post_type >= 1) {
+                if (_this5.state.sources[index].post_type) {
                     _this5.getTaxonomies(index, _this5.state.sources[index].post_type, site);
                 }
             });
@@ -441,7 +439,6 @@ var news_block = function (_Component4) {
         };
 
         _this5.getTaxonomies = function (index, post_type, site) {
-
             _this5.setSourceArrayState(index, 'taxonomies', [{ value: '', label: __('Loading taxonomies...'), disabled: true }]);
             _this5.setSourceArrayState(index, 'terms', []);
 
@@ -470,7 +467,7 @@ var news_block = function (_Component4) {
 
                 _this5.setSourceArrayState(index, 'taxonomies', options_taxonomy_list);
 
-                if (_this5.state.sources[index].taxonomy >= 1) {
+                if (_this5.state.sources[index].taxonomy) {
                     _this5.getTerms(index, _this5.state.sources[index].taxonomy, site);
                 }
             });
@@ -534,7 +531,7 @@ var news_block = function (_Component4) {
             });
 
             _this5.setState({ sources: sources });
-            console.log(sources);
+            //console.log(sources);
             // don't push the dynamic lists to the server, as they get recomputed and don't need to be statically saved.
             var sources_without_lists = void 0;
             sources_without_lists = JSON.parse(JSON.stringify(sources)); // force a clone so we don't clobber state when setting server attributes
@@ -632,7 +629,7 @@ var news_block = function (_Component4) {
         value: function componentDidMount() {
             var _this6 = this;
 
-            console.log(this.props.attributes.sources);
+            //console.log(this.props.attributes.sources);
             // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
             if (this.props.attributes.sources.length > 0) {
                 this.props.attributes.sources.map(function (single_source, index) {

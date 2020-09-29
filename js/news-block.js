@@ -38,7 +38,6 @@ class News_block_component_internal extends Component {
                         {(this.props.post_type) ?
                             <Fragment >
                                 <SelectControl
-                                    valuez={this.props.taxonomy}
                                     value={this.props.taxonomy}
                                     label={__('Select a taxonomy')}
                                     options={this.props.taxonomies}
@@ -179,7 +178,7 @@ class news_block extends Component {
 
 
     componentDidMount() {
-        console.log(this.props.attributes.sources);
+        //console.log(this.props.attributes.sources);
         // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
         if (this.props.attributes.sources.length > 0) {
             this.props.attributes.sources.map((single_source, index) => {
@@ -224,9 +223,9 @@ class news_block extends Component {
             selected_term_list: []
 
         };
-        console.log(single_source);
+        //console.log(single_source);
         new_source_state = this.constructor.attributesMerge(new_source_state, single_source);
-        console.log(new_source_state);
+        //console.log(new_source_state);
         this.setState((previousState) => {
             let state_sources;
             state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
@@ -309,7 +308,7 @@ class news_block extends Component {
 
             this.setSourceArrayState(index, 'sites', options_site_list);
 
-            if (this.state.sources[ index ].blog_id >= 1) {
+            if (this.state.sources[ index ].blog_id ) {
                 this.getPostTypes(index, this.state.sources[ index ].blog_id);
             }
         }));
@@ -318,7 +317,6 @@ class news_block extends Component {
     };
 
     getPostTypes = (index, site) => {
-
         this.setSourceArrayState(
             index,
             'post_types',
@@ -364,7 +362,7 @@ class news_block extends Component {
 
             this.setSourceArrayState(index, 'post_types', options_post_type_list);
 
-            if (this.state.sources[ index ].post_type >= 1) {
+            if (this.state.sources[ index ].post_type ) {
                 this.getTaxonomies(index, this.state.sources[ index ].post_type, site);
             }
         }));
@@ -380,7 +378,6 @@ class news_block extends Component {
      * @returns {*}
      */
     getTaxonomies = (index, post_type, site) => {
-
         this.setSourceArrayState(
             index,
             'taxonomies',
@@ -417,8 +414,7 @@ class news_block extends Component {
 
             this.setSourceArrayState(index, 'taxonomies', options_taxonomy_list);
 
-
-            if (this.state.sources[ index ].taxonomy >= 1) {
+            if (this.state.sources[ index ].taxonomy ) {
                 this.getTerms(index, this.state.sources[ index ].taxonomy, site);
             }
         }));
@@ -508,7 +504,7 @@ class news_block extends Component {
         });
 
         this.setState({sources});
-        console.log(sources);
+        //console.log(sources);
         // don't push the dynamic lists to the server, as they get recomputed and don't need to be statically saved.
         let sources_without_lists;
         sources_without_lists = JSON.parse(JSON.stringify(sources)); // force a clone so we don't clobber state when setting server attributes
