@@ -352,8 +352,15 @@ class news_block {
 		while ( $the_query->have_posts() ) {
 			$the_query->the_post();
 
-			$news_image_array = wp_get_attachment_image_src( get_post_thumbnail_id(), 'large' );
-			$news_image       = $news_image_array[ 0 ];
+			if ( wp_get_attachment_image_src( get_post_thumbnail_id(), 'large' ) ) {
+				$news_image_array = wp_get_attachment_image_src( get_post_thumbnail_id(), 'large' );
+			} elseif ( !wp_get_attachment_image_src( get_post_thumbnail_id(), 'large' ) ) {
+				$news_image_array = array ("0"=>"/wp-content/plugins/news-block/images/default.jpg");
+			}
+
+			//$news_image_array = wp_get_attachment_image_src( get_post_thumbnail_id(), 'large' );
+
+			$news_image = $news_image_array[ 0 ];
 
 			// add all (5) COM articles to array
 			array_push( $return_news_posts, [
