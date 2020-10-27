@@ -135,14 +135,26 @@ class news_block_endpoint {
 
 
 	public function get_sites_list() {
-		$return_array = [];
 
-		$wp_list = get_sites();
-
-		foreach ($wp_list as $site) {
-			array_push($return_array, [ 'value' => $site->blog_id, 'label' => $site->__get('blogname')]);
+		if (is_multisite()){
+			$wp_list = get_sites();
+			return $this->get_useful_site_list($wp_list);
+		} else {
+			return [['value' => 1, 'label' => get_bloginfo('name')]];
 		}
 
+	}
+
+	public function get_useful_site_list($list_of_sites){
+		$return_array = [];
+		$inner_request = [];
+		foreach ($list_of_sites as $site){
+			$inner_request['blog_id'] = $site->blog_id;
+			$post_types = $this->get_post_types_list($inner_request); // this function normally uses the request object, so we're passing it the data it expects
+			if (is_array($post_types) && sizeof($post_types) > 0){
+				array_push($return_array, [ 'value' => $site->blog_id, 'label' => $site->__get('blogname')]);
+			}
+		}
 		return $return_array;
 	}
 
@@ -157,23 +169,42 @@ class news_block_endpoint {
 
 		$blog_id = $request['blog_id'];
 
-		$return_array = [];
-
 		$switched_blog = false;
-		if ($blog_id && (get_current_blog_id() !== $blog_id)){
-			switch_to_blog($blog_id);
-			$switched_blog = true;
+		if (is_multisite()) {
+			if ( $blog_id && ( get_current_blog_id() !== $blog_id ) ) {
+				switch_to_blog( $blog_id );
+				$switched_blog = true;
+			}
 		}
 
-		$wp_list = get_post_types(['public' => true], 'objects');
-		foreach ($wp_list as $post_type) {
-			array_push($return_array, [ 'value' => $post_type->name, 'label' => $post_type->label]);
-		}
+		$wp_list = get_post_types(['public' => true], 'objects'); //public gets rid of internal post types
+		$return_array = $this->get_useful_post_types_list($wp_list);
 
 		if ( $switched_blog ) {
 			restore_current_blog();
 		}
 
+		return $return_array;
+	}
+
+	public function get_useful_post_types_list($list_of_post_types){
+		$return_array = [];
+		foreach ($list_of_post_types as $post_type) {
+			// only show post types that actually have published posts
+			$count_posts = wp_count_posts($post_type->name);
+			$count_published = $count_posts->publish;
+
+			// also show post types only if they have a taxonomy, as that is required for the plugin to work
+			$wp_tax_list = get_object_taxonomies($post_type->name, 'objects');
+			//			echo "<pre>";
+			//			var_dump($wp_tax_list);
+			//			echo "</pre>";
+			$useful_tax_list = $this->get_useful_taxonomies_list($wp_tax_list);
+
+			if (($count_published > 0) && ((is_array($useful_tax_list)) && (sizeof($useful_tax_list) > 0))) {
+				array_push( $return_array, [ 'value' => $post_type->name, 'label' => $post_type->label ] );
+			}
+		}
 		return $return_array;
 	}
 
@@ -193,18 +224,31 @@ class news_block_endpoint {
 		$return_array = [];
 
 		$switched_blog = false;
-		if ($blog_id && (get_current_blog_id() !== $blog_id)){
-			switch_to_blog($blog_id);
-			$switched_blog = true;
+		if (is_multisite()) {
+			if ( $blog_id && ( get_current_blog_id() !== $blog_id ) ) {
+				switch_to_blog( $blog_id );
+				$switched_blog = true;
+			}
 		}
-
 		if ($post_type) {
 			$wp_list = get_object_taxonomies($post_type, 'objects');
 		} else {
 			$wp_list = get_taxonomies(['public' => true], 'objects');
 		}
 
-		foreach ($wp_list as $taxonomy) {
+		$return_array = $this->get_useful_taxonomies_list($wp_list);
+
+		if ( $switched_blog ) {
+			restore_current_blog();
+		}
+
+		return $return_array;
+	}
+
+	public function get_useful_taxonomies_list($list_of_taxonomies){
+		$return_array = [];
+
+		foreach ($list_of_taxonomies as $taxonomy) {
 
 			// make sure the taxonomy has terms that are used. if it has terms, but they're all unused, then don't show this taxonomy.
 			$term_list = get_terms(['taxonomy' => $taxonomy->name, 'hide_empty' => true]);
@@ -212,12 +256,8 @@ class news_block_endpoint {
 				array_push($return_array, [ 'value' => $taxonomy->name, 'label' => $taxonomy->label . " (" . $taxonomy->name . ")"]);
 			}
 		}
-
-		if ( $switched_blog ) {
-			restore_current_blog();
-		}
-
 		return $return_array;
+
 	}
 
 	/**
@@ -236,14 +276,16 @@ class news_block_endpoint {
 		$return_array = [];
 
 		$switched_blog = false;
-		if ($blog_id && (get_current_blog_id() !== $blog_id)){
-			switch_to_blog($blog_id);
-			$switched_blog = true;
+		if (is_multisite()) {
+			if ( $blog_id && ( get_current_blog_id() !== $blog_id ) ) {
+				switch_to_blog( $blog_id );
+				$switched_blog = true;
+			}
 		}
 
 		if ($taxonomy) {
 			$wp_list = get_terms(['taxonomy' => $taxonomy, 'hide_empty' => true]);
-		} else {
+		}else {
 			$wp_list = get_terms(['hide_empty' => true]);
 		}
 
@@ -257,6 +299,8 @@ class news_block_endpoint {
 
 		return $return_array;
 	}
+
+
 //	public function get_taxonomy_list() {
 //		$taxonomy_array = [];
 //

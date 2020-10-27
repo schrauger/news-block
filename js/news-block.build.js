@@ -317,9 +317,9 @@ var news_block = function (_Component4) {
                 selected_term_list: []
 
             };
-            console.log(single_source);
+            //console.log(single_source);
             new_source_state = _this5.constructor.attributesMerge(new_source_state, single_source);
-            console.log(new_source_state);
+            //console.log(new_source_state);
             _this5.setState(function (previousState) {
                 var state_sources = void 0;
                 state_sources = previousState.sources.slice(0); // clone the array to modify it, so we don't mess it up
@@ -378,7 +378,7 @@ var news_block = function (_Component4) {
                 // load sites into select list
                 var options_site_list = [];
                 if (sites.length > 0) {
-                    options_site_list.push({ value: 0, label: __('Select a site'), disabled: true });
+                    options_site_list.push({ value: 0, label: __('Select a site'), disabled: false });
                     sites.forEach(function (site) {
                         options_site_list.push({ value: site.value, label: site.label });
                     });
@@ -397,7 +397,6 @@ var news_block = function (_Component4) {
         };
 
         _this5.getPostTypes = function (index, site) {
-
             _this5.setSourceArrayState(index, 'post_types', [{ value: '', label: __('Loading post types...'), disabled: true }]);
             _this5.setSourceArrayState(index, 'taxonomies', []);
             _this5.setSourceArrayState(index, 'terms', []);
@@ -413,7 +412,15 @@ var news_block = function (_Component4) {
                 // load post types into select list
                 var options_post_type_list = [];
                 if (post_types.length > 0) {
-                    options_post_type_list.push({ value: '', label: __('Select a post type'), disabled: true }); // value must be empty string; if null, the value ends up being the label.
+                    options_post_type_list.push({ value: '', label: __('Select a post type'), disabled: false });
+                    // don't mark this as disabled. otherwise, if a new site is selected, the old post type selected
+                    // might not exist in the new site, causing react to be unable to detect onchange with a single option.
+                    // ex: site 1, post_type person. changed to site 2, which has no person posttype but has a single news type.
+                    //     news is auto selected (as it's the only non-disabled option), but it doesn't trigger the onChange.
+                    //     And onChange can't be triggered since it's the only option and thus won't change with a user input.
+                    //     By leaving this empty "Select a ..." option as enabled, that instead becomes the autoselected one,
+                    //     and the user can thus select the single other option in the list, triggering onChange events.
+
                     post_types.forEach(function (post_type) {
                         options_post_type_list.push({ value: post_type.value, label: post_type.label });
                     });
@@ -432,7 +439,6 @@ var news_block = function (_Component4) {
         };
 
         _this5.getTaxonomies = function (index, post_type, site) {
-
             _this5.setSourceArrayState(index, 'taxonomies', [{ value: '', label: __('Loading taxonomies...'), disabled: true }]);
             _this5.setSourceArrayState(index, 'terms', []);
 
@@ -450,7 +456,7 @@ var news_block = function (_Component4) {
                 // load taxonomies into select list
                 var options_taxonomy_list = [];
                 if (taxonomies.length > 0) {
-                    options_taxonomy_list.push({ value: '', label: __('Select a taxonomy'), disabled: true }); // value must be empty string; if null, the value ends up being the label.
+                    options_taxonomy_list.push({ value: '', label: __('Select a taxonomy'), disabled: false }); // value must be empty string; if null, the value ends up being the label.
 
                     taxonomies.forEach(function (taxonomy) {
                         options_taxonomy_list.push({ value: taxonomy.value, label: taxonomy.label });
@@ -525,6 +531,7 @@ var news_block = function (_Component4) {
             });
 
             _this5.setState({ sources: sources });
+            //console.log(sources);
             // don't push the dynamic lists to the server, as they get recomputed and don't need to be statically saved.
             var sources_without_lists = void 0;
             sources_without_lists = JSON.parse(JSON.stringify(sources)); // force a clone so we don't clobber state when setting server attributes
@@ -622,7 +629,7 @@ var news_block = function (_Component4) {
         value: function componentDidMount() {
             var _this6 = this;
 
-            console.log(this.props.attributes.sources);
+            //console.log(this.props.attributes.sources);
             // for each source in the database, create a corresponding blank entry in state to hold lists of sites, terms, etc. then load the sites.
             if (this.props.attributes.sources.length > 0) {
                 this.props.attributes.sources.map(function (single_source, index) {
@@ -946,7 +953,7 @@ var news_block = function (_Component4) {
 registerBlockType('schrauger/news-block', {
     title: __('News Block', 'news-block-for-gutenberg'),
     description: __('Lists the most recent posts from newest to oldest, with the ability to pull in and sort from multiple internal and external sources.', 'news-block-for-gutenberg'),
-    icon: 'format-aside',
+    icon: 'welcome-widgets-menus',
     category: 'embed',
     attributes: {
         // need ability for two or more sources. probably repeating field.

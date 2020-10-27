@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 1.2.2
+Version: 1.4.3
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -156,12 +156,12 @@ class news_block {
 	}
 
 	// Custom excerpt word count length for copy, with the 'more' elipsis counting as one of the words
-	public static function excerpt_length( $length ) {
+	public static function excerpt_length( $length = 8) {
 		return 8;
 	}
 
 	// Custom excerpt ellipses
-	public static function excerpt_more( $more_string ) {
+	public static function excerpt_more( $more_string = '...') {
 		return '...';
 	}
 
@@ -230,7 +230,7 @@ class news_block {
 		// trim down our array based on the max number we want to display
 		$news_posts = array_slice( $news_posts, 0, $attributes[ 'max_news_articles' ] );
 		// finally, print out all the posts
-		if ( sizeof( $news_posts ) > 0 ) {
+		if ( is_array($news_posts) && sizeof( $news_posts ) > 0 ) {
 			foreach ( $news_posts as $post ) {
 
 				$youtube_html = "";
@@ -305,9 +305,11 @@ class news_block {
 		$return_news_posts = [];
 
 		$switched_blog = false;
-		if ( get_current_blog_id() != $source[ 'blog_id' ] ) {
-			switch_to_blog( $source[ 'blog_id' ] );
-			$switched_blog = true;
+		if (is_multisite()) {
+			if ( get_current_blog_id() != $source[ 'blog_id' ] ) {
+				switch_to_blog( $source[ 'blog_id' ] );
+				$switched_blog = true;
+			}
 		}
 		$tax_query = self::tax_query( $source );
 
@@ -318,7 +320,7 @@ class news_block {
 		] );
 
 		// restrict to selected terms from taxonomy
-		if ( sizeof( $tax_query ) > 0 ) {
+		if ( is_array($tax_query) && sizeof( $tax_query ) > 0 ) {
 			$query_args = array_merge( $query_args, [
 				'tax_query' => [ $tax_query ], // must be inside an array
 			] );
@@ -457,7 +459,7 @@ class news_block {
 				/* @var SimplePie_Item $item */
 
 				/* get thumbnail */
-				$htmlDOM = new simple_html_dom();
+				$htmlDOM = new com\schrauger\news_block\simple_html_dom();
 				$htmlDOM->load( $item->get_content() );
 				$image     = $htmlDOM->find( 'img', 0 );
 				$image_url = $image->src;
@@ -466,8 +468,7 @@ class news_block {
 				$image->outertext = '';
 				$htmlDOM->save();
 
-				$content_minus_image = wp_trim_words( $htmlDOM, new_excerpt_length(), new_excerpt_more() ); // these functions are defined in functions.php
-
+				$content_minus_image = wp_trim_words( $htmlDOM, apply_filters('excerpt_length', self::excerpt_length() ), apply_filters('excerpt_more', self::excerpt_more()) ); // use any user-defined excerpt lengths to generate our own excerpt for external rss results
 				if ( ! isset( $image_url ) ) // if exists
 				{
 					$image_url = '/wp-content/themes/ucf-health-theme/images/logos/ucf-building.jpg'; // default stock image if image not set
@@ -507,9 +508,8 @@ class news_block {
 	 */
 	public static function tax_query( $source ) {
 		//$attributes = self::shortcode_atts( $attributes );
-
 		$return_array = [];
-		if ( $source[ 'taxonomy_term_mode' ] === 'false' ) {
+		if ( $source[ 'taxonomy_term_mode' ] === false || $source[ 'taxonomy_term_mode' ] === 'false') { // type changes from boolean to string depending on if editor or on page. stupid inconsistent WP.
 			// whitelist mode.
 			$relation = "OR";
 			$operator = "IN";
@@ -518,16 +518,15 @@ class news_block {
 			$relation = "AND";
 			$operator = "NOT IN";
 		}
-
 		// apply AND or OR if specifying more than one slug
-		if ( sizeof( $source[ 'selected_term_list' ] ) > 1 ) {
+		if ((is_array( $source[ 'selected_term_list' ] )) && ( sizeof( $source[ 'selected_term_list' ] ) > 1 )) {
 			$return_array[ 'relation' ] = $relation;
 		}
 
 		// looping through each term and adding an explicit tax query for each one.
 		// we might be able to simply apply all terms to the 'terms' operator as it accepts an array,
 		// but I'm not sure what the behaviour is with IN vs NOT IN. we need (OR with IN) and (AND with NOT IN).
-		foreach ( $source[ 'selected_term_list' ] as $slug ) {
+		foreach ( (array) $source[ 'selected_term_list' ] as $slug ) {
 			array_push( $return_array, [
 				'taxonomy' => $source[ 'taxonomy' ],
 				'field'    => 'slug',
@@ -535,7 +534,6 @@ class news_block {
 				'operator' => $operator
 			] );
 		}
-
 		return $return_array;
 	}
 
