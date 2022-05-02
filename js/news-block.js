@@ -57,6 +57,7 @@ class News_block_component_internal extends Component {
                                             options={this.props.terms}
                                             onChange={this.props.updateSelectedTerms}
                                             multiple={true}
+                                            className='term-selector'
                                         />
                                     </Fragment >
                                     :

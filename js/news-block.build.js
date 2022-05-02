@@ -164,7 +164,8 @@ var News_block_component_internal = function (_Component) {
                                 label: this.props.taxonomy_term_mode ? __('Select terms to exclude') : __('Select terms to include'),
                                 options: this.props.terms,
                                 onChange: this.props.updateSelectedTerms,
-                                multiple: true
+                                multiple: true,
+                                className: 'term-selector'
                             })
                         ) : []
                     ) : []

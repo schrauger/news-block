@@ -1,3 +1,6 @@
+div.term-selector.term-selector.term-selector > div.components-input-control__container > select {
+  min-height: 10em; }
+
 .news.images {
   overflow: auto;
   display: flex;

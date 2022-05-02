@@ -30,6 +30,7 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_sites_list'),
+				'permission_callback' => '__return_true',
 			)
 		);
 	}
@@ -42,6 +43,7 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_post_types_list'),
+				'permission_callback' => '__return_true',
 			)
 		);
 		register_rest_route(
@@ -50,7 +52,8 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_post_types_list'),
-				'args' => ['blog_id']
+				'args' => ['blog_id'],
+				'permission_callback' => '__return_true',
 			)
 		);
 	}
@@ -63,6 +66,7 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_taxonomies_list'),
+				'permission_callback' => '__return_true',
 			)
 		);
 		register_rest_route(
@@ -71,7 +75,8 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_taxonomies_list'),
-				'args' => ['post_type']
+				'args' => ['post_type'],
+				'permission_callback' => '__return_true',
 			)
 		);
 		register_rest_route(
@@ -80,7 +85,8 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_taxonomies_list'),
-				'args' => ['blog_id']
+				'args' => ['blog_id'],
+				'permission_callback' => '__return_true',
 			)
 		);
 		register_rest_route(
@@ -89,7 +95,8 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_taxonomies_list'),
-				'args' => ['blog_id','post_type']
+				'args' => ['blog_id','post_type'],
+				'permission_callback' => '__return_true',
 			)
 		);
 	}
@@ -102,6 +109,7 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_terms_list'),
+				'permission_callback' => '__return_true',
 			)
 		);
 		register_rest_route(
@@ -110,7 +118,8 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_terms_list'),
-				'args' => ['taxonomy']
+				'args' => ['taxonomy'],
+				'permission_callback' => '__return_true',
 			)
 		);
 		register_rest_route(
@@ -119,7 +128,8 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_terms_list'),
-				'args' => ['blog_id']
+				'args' => ['blog_id'],
+				'permission_callback' => '__return_true',
 			)
 		);
 		register_rest_route(
@@ -128,7 +138,8 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_terms_list'),
-				'args' => ['blog_id','taxonomy']
+				'args' => ['blog_id','taxonomy'],
+				'permission_callback' => '__return_true',
 			)
 		);
 	}
