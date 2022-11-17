@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 1.5.1
+Version: 1.5.2
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -234,7 +234,7 @@ class news_block {
 			foreach ( $news_posts as $post ) {
 
 				$youtube_html = "";
-				if ( $post[ 'youtube_video_id' ] ) {
+				if ( isset($post[ 'youtube_video_id' ]) && $post[ 'youtube_video_id' ] ) {
 					$youtube_html = "
                         <aside class='go-to' >
                             <a href='{$post[ 'permalink' ]}' >Go to Article</a >
@@ -243,7 +243,7 @@ class news_block {
 				}
 
 				$notification_html = "";
-				if ( $post[ 'notification_type' ] ) {
+				if ( isset( $post[ 'notification_type' ] ) && $post[ 'notification_type' ] ) {
 					$notification_html = "
                         <span class='notification' >{$post[ 'notification_type' ]}</span>
                     ";
