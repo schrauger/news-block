@@ -8,14 +8,15 @@
 namespace schrauger\news_block;
 
 class news_block_endpoint {
-	private $version;
-	private $namespace;
+	private string $version;
+	private string $namespace;
 
 	public function __construct() {
 		$this->version = '1';
 		$this->namespace = 'schrauger/news-block/v' . $this->version;
 	}
-	public function run() {
+	public function run(): void
+    {
 		add_action( 'rest_api_init', array( $this, 'get_sites'));
 		add_action( 'rest_api_init', array( $this, 'get_post_types'));
 		add_action( 'rest_api_init', array( $this, 'get_taxonomies'));
@@ -23,7 +24,8 @@ class news_block_endpoint {
 	}
 
 	// List all network sites
-	public function get_sites() {
+	public function get_sites(): void
+    {
 		register_rest_route(
 			$this->namespace,
 			'/get-sites',
@@ -36,7 +38,8 @@ class news_block_endpoint {
 	}
 
 	// List all public post types for current or specified site
-	public function get_post_types() {
+	public function get_post_types(): void
+    {
 		register_rest_route(
 			$this->namespace,
 			'/get-post-types',
@@ -52,14 +55,19 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_post_types_list'),
-				'args' => ['blog_id'],
+				'args' => array(
+                    'blog_id' => array(
+                        'required' => false,
+                    )
+                ),
 				'permission_callback' => '__return_true',
 			)
 		);
 	}
 
 	// List all taxonomies for specified post type and current or specified site
-	public function get_taxonomies() {
+	public function get_taxonomies(): void
+    {
 		register_rest_route(
 			$this->namespace,
 			'/get-taxonomies',
@@ -75,7 +83,11 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_taxonomies_list'),
-				'args' => ['post_type'],
+                'args' => array(
+                    'post_type' => array(
+                        'required' => true,
+                    )
+                ),
 				'permission_callback' => '__return_true',
 			)
 		);
@@ -85,7 +97,11 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_taxonomies_list'),
-				'args' => ['blog_id'],
+                'args' => array(
+                    'blog_id' => array(
+                        'required' => true,
+                    )
+                ),
 				'permission_callback' => '__return_true',
 			)
 		);
@@ -95,14 +111,22 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_taxonomies_list'),
-				'args' => ['blog_id','post_type'],
+                'args' => array(
+                    'blog_id' => array(
+                        'required' => true,
+                    ),
+                    'post_type' => array(
+                        'required' => true,
+                    )
+                ),
 				'permission_callback' => '__return_true',
 			)
 		);
 	}
 
 	// List all terms for specified taxonomy and current or specified site
-	public function get_terms() {
+	public function get_terms(): void
+    {
 		register_rest_route(
 			$this->namespace,
 			'/get-terms',
@@ -118,7 +142,11 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_terms_list'),
-				'args' => ['taxonomy'],
+                'args' => array(
+                    'taxonomy' => array(
+                        'required' => true,
+                    )
+                ),
 				'permission_callback' => '__return_true',
 			)
 		);
@@ -128,8 +156,11 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_terms_list'),
-				'args' => ['blog_id'],
-				'permission_callback' => '__return_true',
+                'args' => array(
+                    'blog_id' => array(
+                        'required' => true,
+                    )
+                ),				'permission_callback' => '__return_true',
 			)
 		);
 		register_rest_route(
@@ -138,14 +169,21 @@ class news_block_endpoint {
 			array(
 				'methods' => 'GET',
 				'callback' => array($this, 'get_terms_list'),
-				'args' => ['blog_id','taxonomy'],
+                'args' => array(
+                    'blog_id' => array(
+                    ),
+                    'taxonomy' => array(
+                        'required' => true,
+                    )
+                ),
 				'permission_callback' => '__return_true',
 			)
 		);
 	}
 
 
-	public function get_sites_list() {
+	public function get_sites_list(): array
+    {
 
 		if (is_multisite()){
 			$wp_list = get_sites();
@@ -156,31 +194,37 @@ class news_block_endpoint {
 
 	}
 
-	public function get_useful_site_list($list_of_sites){
+	public function get_useful_site_list($list_of_sites): array
+    {
 		$return_array = [];
 		$inner_request = [];
 		foreach ($list_of_sites as $site){
 			$inner_request['blog_id'] = $site->blog_id;
 			$post_types = $this->get_post_types_list($inner_request); // this function normally uses the request object, so we're passing it the data it expects
 			if (is_array($post_types) && sizeof($post_types) > 0){
-				array_push($return_array, [ 'value' => $site->blog_id, 'label' => $site->__get('blogname')]);
+				$return_array[] = ['value' => $site->blog_id, 'label' => $site->__get('blogname')];
 			}
 		}
 		return $return_array;
 	}
 
 
-	/**
-	 * Get a list of all post types for a specified blog, or the current blog if none specified (@TODO might be blog 1 instead of current, depending on how REST api is implemented in WordPress)
-	 * @param $request
-	 *
-	 * @return array
-	 */
-	public function get_post_types_list($request) {
+    /**
+     * Get a list of all post types for a specified blog, or the current blog if none specified (@TODO might be blog 1 instead of current, depending on how REST api is implemented in WordPress)
+     * @param \WP_REST_Request|array $request
+     *
+     * @return array
+     */
+	public function get_post_types_list(\WP_REST_Request|array $request): array
+    {
 
-		$blog_id = $request['blog_id'];
+        if (is_a($request, 'WP_REST_Request' )){
+            $blog_id = $request->get_param('blog_id');
+        } elseif (is_array($request)){
+            $blog_id = $request['blog_id'];
+        }
 
-		$switched_blog = false;
+        $switched_blog = false;
 		if (is_multisite()) {
 			if ( $blog_id && ( get_current_blog_id() !== $blog_id ) ) {
 				switch_to_blog( $blog_id );
@@ -198,7 +242,12 @@ class news_block_endpoint {
 		return $return_array;
 	}
 
-	public function get_useful_post_types_list($list_of_post_types){
+    /**
+     * @param \WP_Post_Type[] $list_of_post_types
+     * @return array
+     */
+    public function get_useful_post_types_list(array $list_of_post_types): array
+    {
 		$return_array = [];
 		foreach ($list_of_post_types as $post_type) {
 			// only show post types that actually have published posts
@@ -213,24 +262,29 @@ class news_block_endpoint {
 			$useful_tax_list = $this->get_useful_taxonomies_list($wp_tax_list);
 
 			if (($count_published > 0) && ((is_array($useful_tax_list)) && (sizeof($useful_tax_list) > 0))) {
-				array_push( $return_array, [ 'value' => $post_type->name, 'label' => $post_type->label ] );
+				$return_array[] = ['value' => $post_type->name, 'label' => $post_type->label];
 			}
 		}
 		return $return_array;
 	}
 
-	/**
-	 * Get a list of all taxonomies. If blog specified, switches to that blog.
-	 * Also, if post_type specified, will only list taxonomies for that post type.
-	 *
-	 * @param $request
-	 *
-	 * @return array
-	 */
-	public function get_taxonomies_list($request) {
-
-		$blog_id = $request['blog_id'];
-		$post_type = $request['post_type'];
+    /**
+     * Get a list of all taxonomies. If blog specified, switches to that blog.
+     * Also, if post_type specified, will only list taxonomies for that post type.
+     *
+     * @param \WP_REST_Request|array $request
+     *
+     * @return array
+     */
+	public function get_taxonomies_list(\WP_REST_Request|array $request): array
+    {
+        if (is_a($request, 'WP_REST_Request' )){
+            $blog_id = $request->get_param('blog_id');
+            $post_type = $request->get_param('post_type');
+        } elseif (is_array($request)){
+            $blog_id = $request['blog_id'];
+            $post_type = $request['post_type'];
+        }
 
 		$return_array = [];
 
@@ -256,7 +310,12 @@ class news_block_endpoint {
 		return $return_array;
 	}
 
-	public function get_useful_taxonomies_list($list_of_taxonomies){
+    /**
+     * @param \WP_Taxonomy[] $list_of_taxonomies
+     * @return array
+     */
+    public function get_useful_taxonomies_list(array $list_of_taxonomies): array
+    {
 		$return_array = [];
 
 		foreach ($list_of_taxonomies as $taxonomy) {
@@ -264,25 +323,30 @@ class news_block_endpoint {
 			// make sure the taxonomy has terms that are used. if it has terms, but they're all unused, then don't show this taxonomy.
 			$term_list = get_terms(['taxonomy' => $taxonomy->name, 'hide_empty' => true]);
 			if (count($term_list) > 0){
-				array_push($return_array, [ 'value' => $taxonomy->name, 'label' => $taxonomy->label . " (" . $taxonomy->name . ")"]);
+				$return_array[] = ['value' => $taxonomy->name, 'label' => $taxonomy->label . " (" . $taxonomy->name . ")"];
 			}
 		}
 		return $return_array;
 
 	}
 
-	/**
-	 * Get a list of all taxonomies. If blog specified, switches to that blog.
-	 * Also, if post_type specified, will only list taxonomies for that post type.
-	 *
-	 * @param $request
-	 *
-	 * @return array
-	 */
-	public function get_terms_list($request) {
+    /**
+     * Get a list of all taxonomies. If blog specified, switches to that blog.
+     * Also, if post_type specified, will only list taxonomies for that post type.
+     *
+     * @param \WP_REST_Request|array $request
+     *
+     * @return array
+     */
+	public function get_terms_list(\WP_REST_Request|array $request) {
 
-		$blog_id = $request['blog_id'];
-		$taxonomy = $request['taxonomy'];
+        if (is_a($request, 'WP_REST_Request' )){
+            $blog_id = $request->get_param('blog_id');
+            $taxonomy = $request->get_param('taxonomy');
+        } elseif (is_array($request)){
+            $blog_id = $request['blog_id'];
+            $taxonomy = $request['taxonomy'];
+        }
 
 		$return_array = [];
 
@@ -301,7 +365,7 @@ class news_block_endpoint {
 		}
 
 		foreach ($wp_list as $term) {
-			array_push($return_array, [ 'value' => $term->slug, 'label' => $term->name]);
+			$return_array[] = ['value' => $term->slug, 'label' => $term->name];
 		}
 
 		if ( $switched_blog ) {

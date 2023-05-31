@@ -3,7 +3,7 @@
 Plugin Name: News Block
 Plugin URI: https://github.com/schrauger/news-block
 Description: WordPress Block for embedding COM and UCF Health news articles.
-Version: 1.5.4
+Version: 1.6.0
 Author: Stephen Schrauger
 Author URI: https://github.com/schrauger/news-block
 License: GPL2
@@ -21,7 +21,8 @@ class news_block {
 	 * register the react script for a block, and also define
 	 * the server side render callback to allow for raw html.
 	 */
-	public static function load_news_block() {
+	public static function load_news_block(): void
+    {
 
 		wp_enqueue_style(
 			'news-block-plugin-style',
@@ -50,14 +51,13 @@ class news_block {
 		);
 	}
 
-	/**
-	 * Apply defaults to specified attributes if attribute is not defined by the user.
-	 *
-	 * @param array $attributes
-	 *
-	 * @return array
-	 */
-	public static function block_atts() {
+    /**
+     * Apply defaults to specified attributes if attribute is not defined by the user.
+     *
+     * @return array
+     */
+	public static function block_atts()
+    {
 
 		return [
 			'sources'               => [
@@ -142,11 +142,12 @@ class news_block {
 
 	/** Prepends the $content with the current post thumbnail if exists - <p>{thumbnail}</p>$content
 	 *
-	 * @param $content
+	 * @param string $content
 	 *
 	 * @return string
 	 */
-	public static function wcs_post_thumbnails_in_feeds( $content ) {
+	public static function wcs_post_thumbnails_in_feeds( string $content )
+    {
 		global $post;
 		if ( has_post_thumbnail( $post->ID ) ) {
 			$content = '<p>' . get_the_post_thumbnail( $post->ID ) . '</p>' . $content;
@@ -155,14 +156,26 @@ class news_block {
 		return $content;
 	}
 
-	// Custom excerpt word count length for copy, with the 'more' elipsis counting as one of the words
-	public static function excerpt_length( $length = 8) {
-		return 8;
+	// Custom excerpt word count length for copy, with the 'more' ellipsis counting as one of the words
+
+    /**
+     * @param $length
+     * @return int
+     */
+    public static function excerpt_length($length = 8): int
+    {
+		return $length;
 	}
 
 	// Custom excerpt ellipses
-	public static function excerpt_more( $more_string = '...') {
-		return '...';
+
+    /**
+     * @param $more_string
+     * @return string
+     */
+    public static function excerpt_more($more_string = '...'): string
+    {
+		return $more_string;
 	}
 
 
@@ -170,14 +183,14 @@ class news_block {
 	 * Overwrites the client side 'save' method with our own data. This allows us to print out raw html without
 	 * filtering it based on user permissions, so we can embed an iframe.
 	 *
-	 * @param $attributes // input elements from the client
-	 * @param $content    // post-filtered html from the client-side 'save' method. we don't use it here, instead we
+	 * @param array $attributes // input elements from the client
+	 * @param string $content    // post-filtered html from the client-side 'save' method. we don't use it here, instead we
 	 *                    create our own html.
 	 *
 	 * @return string // like shortcode callbacks, this is the html that we render in place of the block.
 	 */
-	public static function render_news_callback( $attributes, $content ) {
-
+	public static function render_news_callback(array $attributes, string $content )
+    {
 		$return_rendered_html = "";
 
 		// if text-only, set a class that css will use to hide images.
@@ -195,33 +208,33 @@ class news_block {
 		}
 
 		$classes_string       = implode( ' ', $classes );
-		$return_rendered_html .= "<section class='{$classes_string}'>";
+		$return_rendered_html .= "<section class='$classes_string'>";
 
 
-		$attributes[ 'sources' ] = $attributes[ 'sources' ];
-		// loop through all our sources and build an array with all the posts
+        // loop through all our sources and build an array with all the posts
 		$news_posts = [];
-		foreach ( $attributes[ 'sources' ] as $source ) {
-			//print_r( $source );
-			if ( ( $source[ 'source_enabled' ] === true ) || ( $source[ 'source_enabled' ] === 'true' ) ) {
-				if ( ( $source[ 'is_external' ] === false ) || ( $source[ 'is_external' ] === 'false' ) ) { //
-					// internal source
-					$internal_posts = self::internal_site_query( $attributes, $source );
-					if ( count( $internal_posts ) > 0 ) {
-						$news_posts = array_merge( $news_posts, $internal_posts );
-					}
-				} else {
-					// external source
-					$external_posts = self::external_site_query( $attributes, $source );
-					if ( count( $external_posts ) > 0 ) {
-						$news_posts = array_merge( $news_posts, $external_posts );
-					}
-				}
-			} else {
-				//disabled source. do nothing.
-			}
-		}
-
+        if (is_iterable($attributes[ 'sources' ])){
+            foreach ( $attributes[ 'sources' ] as $source ) {
+                //print_r( $source );
+                if ( ( $source[ 'source_enabled' ] === true ) || ( $source[ 'source_enabled' ] === 'true' ) ) {
+                    if ( ( $source[ 'is_external' ] === false ) || ( $source[ 'is_external' ] === 'false' ) ) { //
+                        // internal source
+                        $internal_posts = self::internal_site_query( $attributes, $source );
+                        if ( count( $internal_posts ) > 0 ) {
+                            $news_posts = array_merge( $news_posts, $internal_posts );
+                        }
+                    } else {
+                        // external source
+                        $external_posts = self::external_site_query( $attributes, $source );
+                        if ( count( $external_posts ) > 0 ) {
+                            $news_posts = array_merge( $news_posts, $external_posts );
+                        }
+                    }
+                } else {
+                    //disabled source. do nothing.
+                }
+            }
+        }
 		// sort all the posts by date
 		usort( $news_posts, function ( $a, $b ) {
 			return strtotime( $a[ 'datesort' ] ) < strtotime( $b[ 'datesort' ] );
@@ -295,13 +308,14 @@ class news_block {
 	/**
 	 * Runs a query on the internal site, based on the taxonomy terms specified
 	 *
-	 * @param $attributes attributes shared by all sources, such as max_articles, excerpt_length, and date restrictions
-	 * @param $source     specifics about the internal source, such as the blog_id, selected_terms, post_type, and
-	 *                    others
+	 * @param array $attributes  attributes shared by all sources, such as max_articles, excerpt_length, and date restrictions
+	 * @param array $source specifics about the internal source, such as the blog_id, selected_terms, post_type, and
+	 *                      others
 	 *
-	 * @return WP_Query
+	 * @return array
 	 */
-	public static function internal_site_query( $attributes, $source ) {
+	public static function internal_site_query(array $attributes, array $source )
+    {
 		$return_news_posts = [];
 
 		$switched_blog = false;
@@ -365,16 +379,16 @@ class news_block {
 			}
 
 			// add all (5) COM articles to array
-			array_push( $return_news_posts, [
-				'image'     => $news_image,
-				'permalink' => get_the_permalink(),
-				'title'     => get_the_title(),
-				'piece'     => get_the_excerpt(),
-				'datesort'  => get_the_date( 'Y-m-d H:i:s T' ),
-				'date'      => get_the_date(),
-				'class'     => get_post_class( 'news-preview-image' ),
-				'target'    => ''
-			] );
+			$return_news_posts[] = [
+                'image' => $news_image,
+                'permalink' => get_the_permalink(),
+                'title' => get_the_title(),
+                'piece' => get_the_excerpt(),
+                'datesort' => get_the_date('Y-m-d H:i:s T'),
+                'date' => get_the_date(),
+                'class' => get_post_class('news-preview-image'),
+                'target' => ''
+            ];
 		}
 
 
@@ -391,32 +405,35 @@ class news_block {
 	 * Returns a transient lifetime of 10 minutes
 	 * @return int
 	 */
-	public static function external_site_transient_lifetime() {
+	public static function external_site_transient_lifetime(): int
+    {
 		return 600;
 	}
 
-	/**
-	 * Disables the filter that prevents unsafe urls from loading.
-	 *
-	 * @param $args
-	 *
-	 * @return mixed
-	 */
-	public static function disable_safety_filter( $args ) {
+    /**
+     * Disables the filter that prevents unsafe urls from loading.
+     *
+     * @param array $args
+     *
+     * @return array
+     */
+	public static function disable_safety_filter( array $args ): array
+    {
 		$args[ 'reject_unsafe_urls' ] = false;
 
 		return $args;
 	}
 
-	/**
-	 * Gets the feed from a url. If that url resolves to an internally routable ip address in a specified list of
-	 * domains, it disables 'reject_unsafe_urls' to allow the request to continue.
-	 *
-	 * @param $url
-	 *
-	 * @return mixed
-	 */
-	public static function external_site_query_feed( $url ) {
+    /**
+     * Gets the feed from a url. If that url resolves to an internally routable ip address in a specified list of
+     * domains, it disables 'reject_unsafe_urls' to allow the request to continue.
+     *
+     * @param string $url
+     *
+     * @return SimplePie
+     */
+	public static function external_site_query_feed( string $url )
+    {
 		$url_array = parse_url( $url );
 		$host      = $url_array[ 'host' ];
 
@@ -448,7 +465,14 @@ class news_block {
 	}
 
 
-	public static function external_site_query( $attributes, $source ) {
+    /**
+     * @param array $attributes
+     * @param array $source
+     * @return array
+     * @throws Exception
+     */
+    public static function external_site_query(array $attributes, array $source )
+    {
 		$news_posts = [];
 		$feed       = self::external_site_query_feed( $source[ 'rss_url' ] );
 		if ( ! is_wp_error( $feed ) ) {
@@ -481,16 +505,16 @@ class news_block {
 				$date = new DateTime( $item->get_date(), $UTC );
 				$date->setTimezone( $timezoneEST );
 
-				array_push( $news_posts, array(
-					'image'     => $image_url,
-					'permalink' => $item->get_link(),
-					'title'     => $item->get_title(),
-					'piece'     => $content_minus_image,
-					'datesort'  => $datesort->format( 'Y-m-d H:i:s T' ),
-					'date'      => $date->format( 'F d, Y' ),
-					'class'     => 'class="news-preview-image"',
-					'target'    => 'target="_blank"'
-				) );
+				$news_posts[] = array(
+                    'image' => $image_url,
+                    'permalink' => $item->get_link(),
+                    'title' => $item->get_title(),
+                    'piece' => $content_minus_image,
+                    'datesort' => $datesort->format('Y-m-d H:i:s T'),
+                    'date' => $date->format('F d, Y'),
+                    'class' => 'class="news-preview-image"',
+                    'target' => 'target="_blank"'
+                );
 			}
 		}
 		add_filter( 'the_excerpt_rss', array( __CLASS__, 'wcs_post_thumbnails_in_feeds' ) );
@@ -499,14 +523,14 @@ class news_block {
 		return $news_posts;
 	}
 
-	/**
-	 * Generates the tax_query array based on attributes
-	 *
-	 * @param $attributes
-	 *
-	 * @return array
-	 */
-	public static function tax_query( $source ) {
+    /**
+     * Generates the tax_query array based on attributes
+     *
+     * @param array $source
+     * @return array
+     */
+	public static function tax_query(array $source )
+    {
 		//$attributes = self::shortcode_atts( $attributes );
 		$return_array = [];
 		if ( $source[ 'taxonomy_term_mode' ] === false || $source[ 'taxonomy_term_mode' ] === 'false') { // type changes from boolean to string depending on if editor or on page. stupid inconsistent WP.
@@ -527,17 +551,18 @@ class news_block {
 		// we might be able to simply apply all terms to the 'terms' operator as it accepts an array,
 		// but I'm not sure what the behaviour is with IN vs NOT IN. we need (OR with IN) and (AND with NOT IN).
 		foreach ( (array) $source[ 'selected_term_list' ] as $slug ) {
-			array_push( $return_array, [
-				'taxonomy' => $source[ 'taxonomy' ],
-				'field'    => 'slug',
-				'terms'    => $slug,
-				'operator' => $operator
-			] );
+			$return_array[] = [
+                'taxonomy' => $source['taxonomy'],
+                'field' => 'slug',
+                'terms' => $slug,
+                'operator' => $operator
+            ];
 		}
 		return $return_array;
 	}
 
-	public static function get_network_sites() {
+	public static function get_network_sites(): void
+    {
 
 	}
 
@@ -545,6 +570,3 @@ class news_block {
 
 // have to use init hook, since there is server-side rendering
 add_action( 'init', [ 'news_block', 'load_news_block' ] );
-
-
-

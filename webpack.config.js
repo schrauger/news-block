@@ -1,11 +1,12 @@
 module.exports = {
+	mode: 'development',
 	entry: './js/news-block.js',
 	output: {
 		path: __dirname,
 		filename: 'js/news-block.build.js',
 	},
 	module: {
-		loaders: [
+		rules: [
 			{
 				test: /.js$/,
 				loader: 'babel-loader',
@@ -13,4 +14,5 @@ module.exports = {
 			},
 		],
 	},
+	devtool: "inline-source-map",
 };
