@@ -492,7 +492,7 @@ class news_block {
 				$image->outertext = '';
 				$htmlDOM->save();
 
-				$content_minus_image = wp_trim_words( $htmlDOM, apply_filters('excerpt_length', self::excerpt_length() ), apply_filters('excerpt_more', self::excerpt_more()) ); // use any user-defined excerpt lengths to generate our own excerpt for external rss results
+				$content_minus_image = wp_trim_words( (string)$htmlDOM, apply_filters('excerpt_length', self::excerpt_length() ), apply_filters('excerpt_more', self::excerpt_more()) ); // use any user-defined excerpt lengths to generate our own excerpt for external rss results
 				if ( ! isset( $image_url ) ) // if exists
 				{
 					$image_url = plugins_url("images/default.jpg", __FILE__);
