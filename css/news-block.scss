@@ -35,11 +35,15 @@ div.term-selector.term-selector.term-selector {
 
 				.photo-prev {
 					width: 100%;
-					background: red;
+					//background-color: red;
 					height: 140px;
 					display: block;
 					text-indent: -9999px;
 					margin-bottom: 10px;
+					background-size: cover;
+					background-repeat: no-repeat;
+					background-position: center center;
+
 				}
 
 				small {

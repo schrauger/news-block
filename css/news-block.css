@@ -17,11 +17,13 @@ div.term-selector.term-selector.term-selector > div.components-input-control__co
     margin: 15px; }
     .news.images article .photo-prev {
       width: 100%;
-      background: red;
       height: 140px;
       display: block;
       text-indent: -9999px;
-      margin-bottom: 10px; }
+      margin-bottom: 10px;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center center; }
     .news.images article small {
       display: block;
       clear: both; }
