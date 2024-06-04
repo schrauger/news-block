@@ -484,6 +484,8 @@ class news_block {
 
 				/* get thumbnail */
                 unset($image); // reset this each loop, or else items missing the iamge will use the previous article's image in the loop
+                unset($image_url);
+
 				$htmlDOM = new com\schrauger\news_block\simple_html_dom();
 				$htmlDOM->load( $item->get_content() );
 				$image     = $htmlDOM->find( 'img', 0 );
